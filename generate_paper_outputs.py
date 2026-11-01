@@ -129,7 +129,10 @@ def curves(selection):
                         ax.plot([c[axis] for c in selected],[fun(c,name) for c in selected],'o-',label='SCSC' if arm else 'CSC')
                 ax.set_xlabel(dict(gamma='gamma (classification weight)',K='Number of filters K',N='Number of TRAIN images N')[axis])
                 ax.set_ylabel('Pixel AP (0–1)' if row==0 else 'PSNR (dB)');ax.grid(alpha=.25);ax.legend()
-                ax.set_title(f'({"abcdef"[row*3+col]}) VAL {"foreground macro" if name is None else name}')
+                controls=(f'K=4, N=10' if axis=='gamma' else
+                    f'gamma_SCSC={selection["selected"]["gamma"]:g}, N=10' if axis=='K' else
+                    f'K={configs[0]["K"]}, gamma_SCSC={selection["selected"]["gamma"]:g}')
+                ax.set_title(f'({"abcdef"[row*3+col]}) VAL {"foreground macro" if name is None else name}\n{controls}; beta=.015, alpha=1, 11x11',fontsize=10)
                 one,oa=plt.subplots(figsize=(6,4))
                 for line in ax.get_lines():
                     if axis=='gamma' and line.get_label()=='CSC gamma=0':
@@ -149,7 +152,7 @@ def curves(selection):
         ax.plot([c['gamma'] for c in sup],[psnr(c,name) for c in sup],'o-',label='SCSC',color='tab:orange')
         ax.set_xscale('symlog',linthresh=.05);ax.set_xlabel('gamma');ax.set_ylabel('GT-region PSNR (dB)')
         ax.set_title(name);ax.legend();ax.grid(alpha=.25)
-    fig.suptitle('Figure 6 — VAL native grayscale reconstruction inside each class mask')
+    fig.suptitle('Figure 6 — VAL class-region PSNR | K=4, N=10, beta=.015, alpha=1, 11x11')
     save(fig,outdir('figures/figure6_class_psnr')/'figure6_class_PSNR.png')
 
 

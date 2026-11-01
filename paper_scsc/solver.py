@@ -24,6 +24,28 @@ def kernel_fft(D,hw):
 def conv(Df,Z):return back(np.sum(Df[None]*four(Z),axis=1),Z.shape[-2:])
 def adj(Df,x):return back(np.conj(Df)[None]*four(x)[:,None],x.shape[-2:])
 def soft(a,t):return np.sign(a)*np.maximum(np.abs(a)-t,0.)
+
+def logistic_prox(a,y,b,gamma,rho):
+    """Unique logistic proximal root with safeguarded Newton, in float64.
+
+    Undamped Newton can cycle when gamma/rho is large. Monotonicity gives
+    the exact bracket between a and a+gamma*y/rho; every fallback bisects it.
+    """
+    a=np.asarray(a,dtype=np.float64);y=np.asarray(y,dtype=np.float64)
+    b=np.asarray(b,dtype=np.float64)
+    other=a+gamma*y/rho;lo=np.minimum(a,other);hi=np.maximum(a,other)
+    v=a.copy()
+    for _ in range(80):
+        s=expit(-y*(v+b));g=rho*(v-a)-gamma*y*s
+        done=np.abs(g)<1e-10
+        if np.all(done):break
+        lo=np.where(g<0,v,lo);hi=np.where(g>0,v,hi)
+        candidate=v-g/(rho+gamma*s*(1-s))
+        v=np.where(done,v,np.where((candidate>lo)&(candidate<hi),candidate,(lo+hi)*.5))
+    residual=rho*(v-a)-gamma*y*expit(-y*(v+b))
+    if np.max(np.abs(residual),initial=0.)>1e-8:
+        raise FloatingPointError('Logistic proximal stationarity failed')
+    return v
 def proj(D,f):
     # Compact support + Euclidean unit BALL (paper), not unit sphere.
     out=np.zeros_like(D);out[:,:f,:f]=D[:,:f,:f]
@@ -107,15 +129,8 @@ def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M
             # stationarity check; 8 iterations can be insufficient for high gamma.
             # Hessian >= rho > 0 guarantees a unique proximal minimizer.
             mask=labels!=0; yy=labels[mask].astype(DT)
-            a=u2[mask];v=a.copy();bb=np.broadcast_to(b[None,:,None,None],u2.shape)[mask]
-            for _ in range(32):
-                s=expit(-yy*(v+bb))
-                g=rho*(v-a)-gamma*yy*s
-                h=rho+gamma*s*(1-s)
-                step=np.clip(g/h,-25.0,25.0)
-                v-=step
-                if np.max(np.abs(g)) < 2e-5: break
-            u2[mask]=v
+            a=u2[mask];bb=np.broadcast_to(b[None,:,None,None],u2.shape)[mask]
+            u2[mask]=logistic_prox(a,yy,bb,gamma,rho)
         lam0+=q0-u0;lam1+=z-u1;lam2+=q2-u2
         if it==0 or (it+1)%10==0 or it==maxiter-1:
             r2=np.sum((q0-u0)**2)+np.sum((z-u1)**2)+np.sum((q2-u2)**2)
@@ -127,6 +142,7 @@ def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M
             eps_pri=np.sqrt(q0.size+z.size+q2.size)*1e-4+tol*max(norm,dualnorm)
             eps_dual=np.sqrt(z.size)*1e-4+tol*rho*np.linalg.norm(ldual)
             pr=float(np.sqrt(r2));dr=float(np.sqrt(s2))
+            if not np.isfinite(pr+dr):raise FloatingPointError('Nonfinite sparse ADMM residual')
             trace.append({'iter':it+1,'primal_residual':pr,'dual_residual':dr,
                           'rho':float(rho),
                           'coding_objective':float(.5*np.sum(M0*(q0-x)**2)+beta*np.abs(z).sum()+
@@ -149,19 +165,17 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
     The reconstruction mask is inside the v0 proximity operation.
     """
     N,K,H,W=Z.shape;f=D0.shape[-1];sh=(H,W)
-    Zf=four(Z);Xf=four(x)
+    # Supervised codes can make Gram blocks ill-conditioned. Float32 Woodbury
+    # subtraction can lose the identity term and overflow even with finite Z.
+    Zf=four(Z).astype(np.complex128);Xf=four(x)
     zmat=Zf.reshape(N,K,-1).transpose(2,0,1)
-    if N<K:
-        # Multi-image Woodbury: invert the smaller N x N block.
-        A=np.einsum('fnk,fmk->fnm',zmat,zmat.conj(),optimize=True)
-        A+=np.eye(N,dtype=A.dtype)
-        factor=np.einsum('fnk,fnm->fkm',zmat.conj(),np.linalg.inv(A),optimize=True)
-        factor=factor.reshape(H,W//2+1,K,N)
-        Ainv=None
-    else:
-        A=np.einsum('fnk,fnl->fkl',zmat.conj(),zmat,optimize=True)
-        A+=np.eye(K,dtype=A.dtype)
-        Ainv=np.linalg.inv(A).reshape(H,W//2+1,K,K)
+    # Stable spectral solve of (I + Z* Z). Normal-equation Gram inverses and
+    # Woodbury Z* inv(I+ZZ*) factors can catastrophically cancel for coherent
+    # supervised codes, even in float64. SVD preserves the identity/nullspace.
+    _,singular,Vh=np.linalg.svd(zmat,full_matrices=False)
+    rank=min(N,K)
+    Vh=Vh.reshape(H,W//2+1,rank,K)
+    inverse_values=(1/(1+singular**2)).reshape(H,W//2+1,rank)
     v1=proj(np.pad(D0,((0,0),(0,H-f),(0,W-f))),f)
     lam1=np.zeros_like(v1)
     v0=back(np.sum(four(v1)[None]*Zf,axis=1),sh)
@@ -172,11 +186,12 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
     trace=[];converged=False
     for i in range(maxiter):
         rhs=np.einsum('nkhw,nhw->khw',Zf.conj(),four(v0-lam0),optimize=True)+four(v1-lam1)
-        if Ainv is None:
-            zr=np.einsum('nkhw,khw->nhw',Zf,rhs,optimize=True)
-            dhat=rhs-np.einsum('hwkn,nhw->khw',factor,zr,optimize=True)
+        vr=np.einsum('hwrk,khw->rhw',Vh,rhs,optimize=True)
+        scaled=vr*np.moveaxis(inverse_values,-1,0)
+        if N<K:
+            dhat=rhs+np.einsum('hwrk,rhw->khw',Vh.conj(),scaled-vr,optimize=True)
         else:
-            dhat=np.einsum('hwkl,lhw->khw',Ainv,rhs,optimize=True)
+            dhat=np.einsum('hwrk,rhw->khw',Vh.conj(),scaled,optimize=True)
         d=back(dhat,sh)
         q0=back(np.sum(dhat[None]*Zf,axis=1),sh)
         old0=v0;old1=v1
@@ -194,6 +209,8 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
             eps_dual=np.sqrt(d.size)*1e-4+tol*rho*np.linalg.norm(ldual)
             feasible_reconstruction=back(np.sum(four(v1)[None]*Zf,axis=1),sh)
             feasible_cost=float(.5*np.sum(M*(feasible_reconstruction-x)**2))
+            if not np.isfinite(float(pr)+float(du)+feasible_cost):
+                raise FloatingPointError('Nonfinite dictionary ADMM state')
             trace.append({'iter':i+1,'primal_residual':float(pr),'dual_residual':float(du),
                           'rho':float(rho),'reconstruction_objective':float(.5*np.sum(M*(q0-x)**2)),
                           'feasible_dictionary_objective':feasible_cost,

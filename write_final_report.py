@@ -42,7 +42,7 @@ def main():
         '## 8. Hyperparameter search', '',
         f'Gamma grid: {[c["gamma"] for c in s["gamma_configs"]]}; K grid: {sorted(set(c["K"] for c in s["K_configs"]))}; N grid: {sorted(set(c["N"] for c in s["N_configs"]))}', '',
         f'เลือก gamma บน VAL ที่ K=4 แล้วเลือก K ด้วย gamma นั้น Criterion คือ maximum pooled foreground AP; ไม่เลือกจากผลต่าง SCSC−CSC ให้เป็นบวก ไม่เปิด TEST เพื่อเลือกระหว่าง candidates ผลสุดท้าย: **K={s["selected"]["K"]}, gamma={s["selected"]["gamma"]:g}, N=10** N เป็น nested learning curve ใช้ VAL/TEST ชุดเดิม ไม่ใช้ N เพื่อเลือกภาพที่ทำให้ TEST ดีขึ้น', '',
-        'Controls: beta=.015, alpha=1, 11x11 filters, four native tiles/image, 24 positive + 24 negative anchors/head/tile เมื่อมีเพียงพอ การ sweep gamma เป็น supervision ablation หลัก ไม่ได้รันเต็ม Cartesian grid ของ beta/alpha/filter21/seeds หรือ background-head ablation ให้ถือส่วนเหล่านี้ว่า `not run`', '',
+        'Controls: beta=.015, alpha=1, 11x11 filters, four native tiles/image, 24 positive + 24 negative anchors/head/tile เมื่อมีเพียงพอ N learning curve คง K=4 และใช้ gamma ที่ VAL เลือก ไม่ได้ทำ N sweep ซ้ำทุก K หรือสรุปว่าแนวโน้ม N ที่ K=4 ใช้แทน K=100 ได้ การ sweep gamma เป็น supervision ablation หลัก ไม่ได้รันเต็ม Cartesian grid ของ beta/alpha/filter21/seeds หรือ background-head ablation ให้ถือส่วนเหล่านี้ว่า `not run`', '',
         '## 9. Figure 3 results', '',
         'figures/figure3_dictionaries แสดง filters ทั้งหมดของทุก K ที่ทดลองคู่กัน CSC ซ้าย / SCSC ขวา ใช้ symmetric grayscale range เดียวกันในแต่ละคู่ ไม่เลือกเฉพาะ filters สวย มี dictionary evolution ที่ outer 1/5/10 และ supplementary absolute filter-correlation ใน tables/dictionary_diversity.csv ความคล้ายเชิง semantic จากรูปอย่างเดียวไม่ใช่หลักฐานการจำแนก ต้องดู AP/IoU ร่วมกัน', '',
         '## 10. Figure 4 results', '',
@@ -98,6 +98,13 @@ def main():
         '## Verification and provenance','',
         f'ตรวจภาพต้นฉบับ {v["original_images_verified"]} ภาพ, native predictions ของคู่ final {v["selected_native_predictions_recomputed"]} ชุด, paired inpainting {v["paired_inpaintings_verified"]} ชุด และ PNG {v["PNG_files_verified"]} ไฟล์ อ่านค่าใหม่จาก NPZ เพื่อเทียบ confusion/AP/PSNR กับ JSON พร้อม SHA256 inventory ไฟล์ใหม่ทั้งหมด ไม่มีการใช้ผลทดลองเก่าเป็นผลใหม่', '',
         'Source branch: `research/scsc-coco-final`; baseline HEAD และ package versions อยู่ environment.json; source commit อยู่ verification.json ไฟล์ ZIP ใหม่รวม source, data, PDFs และผลใหม่เท่านั้น ไม่รวม virtualenv/cache/unused legacy scripts/pilot checkpoints']
+    diagnostic=OUT/'metrics/ADMM_extended_ceiling_diagnostic.json'
+    if diagnostic.exists():
+        d=read(diagnostic)
+        lines+=['','## Additional ADMM diagnostic','',
+            f'ทดสอบ first alternating step ของ K=4, gamma=1 ซ้ำโดยเพิ่มเพดานเป็น 5,000 และคง atol/rtol เดิม: Z converged={d["Z"]["converged"]} ใน {d["Z"]["iterations"]} iterations; D converged={d["D"]["converged"]} ใน {d["D"]["iterations"]} iterations. Status={d["status"]}. เป็น numerical diagnostic เท่านั้น ไม่ใช่โมเดลที่ฝึก 10 outer iterations และไม่ได้แทนค่าหรือลบ failures ใน primary sweep', '',
+            'สาเหตุที่แยกตรวจ: บาง Z-step เมื่อ gamma สูงต้องปรับ sparse codes จาก initialization มากจนเพดานเดิมไม่พอ; บาง D-step dual residual ยังสูงกว่า tolerance เล็กน้อย และบาง D-step ผ่าน residual แต่ feasible dictionary objective แย่ลงจึงถูก descent guard ปฏิเสธ ต้องแยกกรณีเหล่านี้จากการรันผิดหรือคำนวณ NaN']
+    lines+=['','Implementation provenance: ระหว่างพัฒนาได้ลด redundant FFT โดย reuse zf/dhat ตามสมการเดิม คง objective และ stopping criteria เดิม มี independent scalar/high-K epigraph optimizer tests รองรับ โมเดล K=100 ที่เริ่มก่อน optimization ใช้รุ่น FFT เดิมต่อจนจบ; ไม่เรียกผลจาก profiler ว่าเป็น training result ดู profiling_summary.json และ software metadata โดยไม่อ้าง bitwise identity ระหว่าง implementation revisions']
     (OUT/'FINAL_REPORT_TH.md').write_text('\n'.join(lines)+'\n')
     (OUT/'PROJECT_STATUS_TH.md').write_text('# สถานะผลใหม่\n\nอ่าน FINAL_REPORT_TH.md และ verification.json\n\n'
         f'Artifact consistency: ผ่าน; primary ADMM ไม่ converge {len(v["nonconverged_primary_subproblems"])} รายการ; '

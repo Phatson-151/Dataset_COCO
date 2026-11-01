@@ -4,10 +4,36 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.signal import convolve2d
 from paper_scsc.solver import (conv, adj, kernel_fft, solve_z, solve_d,
-                               init_dict, make_mask, sigmoid_loss_grad)
+                               init_dict, make_mask, sigmoid_loss_grad,logistic_prox)
 
 
 class NumericalSolverTests(unittest.TestCase):
+    def test_logistic_prox_newton_cycle_regression(self):
+        # Undamped Newton oscillates near +/-8; the exact root is zero.
+        a=np.array([-8.,8.]);y=np.array([1.,-1.])
+        np.testing.assert_allclose(logistic_prox(a,y,0.,1.,1/16),0.,atol=1e-9)
+
+    def test_logistic_prox_against_bracketed_scalar_oracle(self):
+        from scipy.optimize import brentq
+        from scipy.special import expit
+        for gamma in [.05,1.,10.,100.]:
+            for rho in [1.,1/16,1/64]:
+                a=np.linspace(-30,30,31);y=np.where(np.arange(31)%2,1.,-1.);b=np.linspace(-3,3,31)
+                actual=logistic_prox(a,y,b,gamma,rho)
+                expected=[brentq(lambda v:rho*(v-aa)-gamma*yy*expit(-yy*(v+bb)),
+                    min(aa,aa+gamma*yy/rho)-1,max(aa,aa+gamma*yy/rho)+1,xtol=1e-12)
+                    for aa,yy,bb in zip(a,y,b)]
+                np.testing.assert_allclose(actual,expected,atol=1e-8)
+
+    def test_ill_conditioned_high_K_dictionary_is_finite_and_decreases_loss(self):
+        z=np.ones((2,12,8,8),'float32')*1000
+        z*=np.linspace(1,1.01,12,dtype='float32')[None,:,None,None]
+        x=np.full((2,8,8),.4,'float32');d=np.zeros((12,3,3),'float32')
+        new,diag=solve_d(x,z,d,maxiter=2000,adaptive=True)
+        self.assertTrue(np.isfinite(new).all())
+        m=make_mask((8,8),3)
+        self.assertLess(float(np.sum(m*(conv(kernel_fft(new,(8,8)),z)-x)**2)),float(np.sum(m*x*x))*.2)
+
     def test_linear_convolution_on_valid_support(self):
         rng = np.random.default_rng(9)
         d = rng.normal(size=(2, 5, 5)).astype('float32')

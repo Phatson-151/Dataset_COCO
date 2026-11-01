@@ -14,7 +14,7 @@ Python 3.12; CPU implementation, no GPU required. Existing cloud virtualenv:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-experiment-lock.txt
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MPLBACKEND=Agg
 python -m unittest discover -s tests -v
 python run_paper_experiments.py
@@ -45,8 +45,9 @@ Parallel independent experiments use CPU subprocesses, each with one BLAS thread
   Internal logit/OVA sigmoid channels: Person, Car, Motorcycle, Background.
   `probabilities` are individual OVA sigmoid scores, not a normalized softmax.
 - Gamma selected on VAL at K=4, then K selected on VAL with that gamma.
-  Criterion: pooled foreground macro AP. N uses nested TRAIN subsets, fixed VAL,
-  and final N=10. TEST never selects models or thresholds in this new run.
+  Criterion: pooled foreground macro AP. N uses nested TRAIN subsets at fixed
+  K=4 and VAL-selected gamma, fixed VAL, and final N=10. The N curve is not a
+  K-by-N grid. TEST never selects models or thresholds in this new run.
 - TEST images were used in earlier work. They are **not an independent holdout**.
   No unseen-data or general statistical superiority claim is justified here.
 - Inpainting removes exactly floor(50% of pixels), paired seeded masks; lowpass

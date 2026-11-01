@@ -102,6 +102,13 @@ def main():
     for c in selection['gamma_configs']+selection['K_configs']+selection['N_configs']:
         k=tag(c['K'],c['gamma'],c['N']);assert (OUT/'metrics'/f'{k}_val.json').exists()
     status=read(OUT/'experiment_configs/experiment_status.json')
+    for p in (OUT/'checkpoints').glob('*/completed.json'):
+        c=read(p)
+        if p.parent.name in status:
+            ratio=(c['z_converged']+c['d_converged'])/c['total_subproblems']
+            status[p.parent.name]['ADMM_convergence_ratio']=ratio
+            status[p.parent.name]['optimization_status']='converged_subproblems' if ratio==1 else 'inconclusive_inner_convergence'
+    jwrite(OUT/'experiment_configs/experiment_status.json',status)
     failed={k:v for k,v in status.items() if v['status']!='completed'}
     report=dict(artifact_consistency_passed=True,models_checked=model_count,
         original_images_verified=native_checked,selected_native_predictions_recomputed=predictions,

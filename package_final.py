@@ -21,7 +21,7 @@ def main():
     archive=ROOT.parent/'SCSC_COCO_COMPLETE_PAPER_EXPERIMENTS_FINAL.zip'
     top='SCSC_COCO_PAPER_EXPERIMENTS_FINAL'
     entries={}
-    source=['requirements.txt','PAPER_AUDIT.md','run_paper_experiments.py',
+    source=['requirements.txt','requirements-experiment-lock.txt','PAPER_AUDIT.md','run_paper_experiments.py',
         'generate_paper_outputs.py','verify_final.py','write_final_report.py',
         'package_final.py','native_final.py','coco_scsc_manifest.json',
         'DATA_ATTRIBUTION.md','SCSC_COCO_MASTER_PROMPT_CODEX_CLOUD_REVISED.txt']
@@ -33,6 +33,7 @@ def main():
     for folder in [ROOT/'references',ROOT/'data',OUT]:
         for path in sorted(folder.rglob('*')):
             if not path.is_file() or path.suffix=='.lock' or 'pilot' in path.parts or '__pycache__' in path.parts:continue
+            if 'failed_attempts' in path.parts and path.suffix=='.npz':continue
             entries[str(path.relative_to(ROOT))]=path
     manifest={name:dict(bytes=p.stat().st_size,sha256=sha(p)) for name,p in entries.items()}
     with zipfile.ZipFile(archive,'w',allowZip64=True) as z:

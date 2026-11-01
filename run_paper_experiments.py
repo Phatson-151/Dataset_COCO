@@ -64,13 +64,15 @@ def main():
     k_configs=[config(k,g,10) for k in ks for g in [0,best_g['gamma']]]
     batch(k_configs)
     best,rank_k=select([c for c in k_configs if c['gamma']>0])
-    n_configs=[config(best['K'],g,n) for n in [1,5,10] for g in [0,best_g['gamma']]]
+    # A controlled N learning curve need not repeat the most expensive K.
+    # Fix K=4 (the gamma-sweep reference) for all N, with the VAL-selected gamma.
+    n_configs=[config(4,g,n) for n in [1,5,10] for g in [0,best_g['gamma']]]
     batch(n_configs)
     # N is a learning curve only: final model always uses all 10 TRAIN images.
     pair=[config(best['K'],g,10) for g in [0,best_g['gamma']]]
     jwrite(OUT/'experiment_configs/selection.json',dict(selected=best,paired_models=pair,
         gamma_ranking=rank_g,K_ranking=rank_k,rule='Maximum pooled VAL foreground AP; no TEST selection',
-        gamma_configs=gamma_configs,K_configs=k_configs,N_configs=n_configs))
+        gamma_configs=gamma_configs,K_configs=k_configs,N_configs=n_configs,N_reference_K=4))
     for c in pair:
         key=tag(c['K'],c['gamma'],c['N'])
         with (directory('logs')/f'{key}_final.log').open('a') as log:

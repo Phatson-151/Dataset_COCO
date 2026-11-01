@@ -1,3 +1,16 @@
+# SCSC COCO — new experiments
+
+The new development and experiment workflow is documented in
+[README_NEW_EXPERIMENTS.md](README_NEW_EXPERIMENTS.md) and
+[PAPER_AUDIT.md](PAPER_AUDIT.md). New results are in `final output/`;
+read `final output/FINAL_REPORT_TH.md` and `verification.json` when generated.
+
+The text below describes the **historical baseline** and is not evidence for
+the new run. Its old artifact names and completion claims do not apply to the
+new experiment release.
+
+---
+
 # COCO 2017 — Native-Pixel CSC vs Supervised CSC (SCSC)
 
 **Experiment package, 1 November 2026.** Source code, unmodified JPEG inputs, exact COCO instance annotations, deterministic train/validation/previously-seen-test splits, trained weights, fresh evaluation heads, convergence logs, numerical outputs and figures are provided together.

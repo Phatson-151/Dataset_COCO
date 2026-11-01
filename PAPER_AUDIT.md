@@ -13,7 +13,7 @@ a claim that SPORCO itself implements supervised CSC.
 | SCSC Eq. 5–8, sum logistic loss | Supervision exists, but the legacy training loop refits theta on label-free re-encodings every outer iteration | `experiments.train` fits theta on the **same supervised Z** after the global D update; only the final evaluation classifier is fitted on label-free codes |
 | SCSC Algorithm 2, shared D update | `native_final.train_model` averages minibatch dictionaries via EMA | New runner uses one D subproblem over the complete fixed TRAIN tile bank; no EMA |
 | SCSC Eq. 9–10, Fourier solve / Woodbury | Dense per-frequency K-by-K inverse tensor in Z | One inverse of I+W'W and rank-one frequency corrections; numerical scalar-reference test and adjoint test |
-| SCSC Eq. 8, logistic proximal | Newton prox, without independent numerical regression test | Independent BFGS comparison of scalar supervised convex objective, including nonzero gamma |
+| SCSC Eq. 8, logistic proximal | Undamped Newton can enter a two-cycle at large gamma/rho; increasing ADMM iterations does not fix the inexact prox | Safeguarded Newton inside the exact monotone root bracket; independent Brent root oracle over gamma/rho ranges and a concrete two-cycle regression; all supervised runs retrained |
 | SCSC Eq. 7, classifier | L-BFGS instead of paper gradient descent | Explicitly retained solver substitution for the same convex objective; logs success, message and iterations; gradient finite-difference test |
 | SPORCO pp. 2–3, ADMM residuals | Some prior runs hit iteration limits | Fixed atol=1e-4, rtol=.003; record raw primal/dual, their tolerances, objective and actual success; adaptive rho uses normalized residual balance and rescales scaled duals; ceiling 1000, never count ceiling as convergence |
 | SPORCO p. 3, low-frequency handling | Image decomposed by FFT Tikhonov filter | Retained for ordinary reconstruction; sparse high-frequency component + stored low-frequency component, all grayscale on native pixel grids |
@@ -24,6 +24,7 @@ a claim that SPORCO itself implements supervised CSC.
 | SCSC Fig. 5 / Table 1 | Only K sweep | Staged gamma sweep, paired K sweep with gamma selected on VAL, nested N sweep with fixed VAL/TEST. AP pooled across valid pixels; class reconstruction PSNR uses GT masks for evaluation only |
 | SCSC Fig. 6 | Not implemented | Reconstruction PSNR inside each Person/Car/Motorcycle GT region, not repeated whole-image PSNR |
 | SCSC Table 2 / section 5.4 | Not implemented | Exact floor(50% pixels) missing mask, seeded per image and shared across arms. Lowpass computed from observed pixels only; masked highpass coding; report all-pixel and missing-pixel PSNR, SSIM, relative error |
+| D Fourier linear systems | Float32 Gram/Woodbury cancellation overflowed in the first K=100 supervised attempt; float64 Gram inversion alone also failed an ill-conditioned regression | Complex128 FFT systems solved spectrally from the SVD of Z, preserving the identity/nullspace without ill-conditioned normal equations; finite-state failure checks and an independent high-coherence loss-decrease regression |
 
 ## Declared adaptations and limitations
 
@@ -74,6 +75,10 @@ a claim that SPORCO itself implements supervised CSC.
   not by seeking a positive SCSC-minus-CSC difference. All paired baselines
   are retained whether they win or lose. Failed and nonconverged runs remain
   visible in status records.
+- The N learning curve fixes K=4 (the gamma-sweep reference) across N=1,5,10;
+  it does not repeat the largest selected K for every N. This resource-aware
+  controlled design was set before N runs and before TEST evaluation. Its trend
+  must not be extrapolated to untested K-by-N combinations.
 - The inpainting lowpass is normalized Gaussian interpolation from observed
   pixels (same for both arms), not the unavailable full-image lowpass. This is
   an explicitly shared preprocessing adaptation. No hidden original pixels

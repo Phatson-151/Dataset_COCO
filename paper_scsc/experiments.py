@@ -86,6 +86,9 @@ def _train(cfg):
     opts=dict(maxiter=cfg['max_admm'],tol=cfg['tol'],adaptive=cfg['adaptive'])
     Z,bootstrap_z=solve_z(D,X,W,b,None,0,cfg['beta'],**opts)
     W,b,bootstrap_c=fit_cls(Z,Y,W,b,cfg['alpha'],maxiter=400)
+    jwrite(path/'bootstrap.json',dict(encoding=bootstrap_z,classifier=bootstrap_c))
+    print(f'{key} bootstrap Z={bootstrap_z["converged"]}({bootstrap_z["iterations"]}) '
+          f't={time.time()-start:.1f}s',flush=True)
     history=[]
     for outer in range(cfg['outer']):
         before=objective(X,Z,D,W,b,Y,cfg['beta'],cfg['gamma'],cfg['alpha'])
