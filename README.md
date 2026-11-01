@@ -1,3 +1,13 @@
+# Latest release: contextual CSC/SCSC experiments
+
+The latest results are in [CONTEXTUAL_RESULTS_RELEASE.md](CONTEXTUAL_RESULTS_RELEASE.md)
+and [the Thai report](rapid_context_output/REPORT_TH.md).
+Branch: `research/scsc-coco-contextual-v1`; tag: `scsc-coco-contextual-v1.0.0`.
+
+The sections below document the earlier research release and historical baseline.
+
+---
+
 # SCSC COCO — new experiments
 
 The new development and experiment workflow is documented in

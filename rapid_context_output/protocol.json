@@ -1,0 +1,29 @@
+{
+  "seed": 20261101,
+  "train_images": 10,
+  "train_pixels_per_class_per_image": 1200,
+  "candidates": [
+    "sparse_context",
+    "rgb_sparse_context",
+    "rgb_context_only"
+  ],
+  "max_iter": 120,
+  "max_leaf_nodes": 15,
+  "learning_rate": 0.1,
+  "l2_regularization": 2,
+  "early_stopping": false,
+  "min_samples_leaf": 80,
+  "selection": "Common family maximizing mean CSC/SCSC VAL all-class mIoU; never optimize the gap",
+  "calibration": "Each arm/family selects BG logit bias from [0,.5,1,1.5,2] on VAL all-class mIoU",
+  "limitations": [
+    "Frozen existing dictionaries, not new dictionary training",
+    "Previously-seen TEST, tiny data, one seed",
+    "Modified method: nonlinear readout, dense TRAIN sampling, multi-scale context; extra RGB features in one family",
+    "Model comparison can fail; do not suppress negative outcomes"
+  ],
+  "source_sha256": "aea5d025906d1de80c1272c8e940568eb18362b88cf25d52705bb885e16d9aed",
+  "dictionary_sha256": {
+    "CSC": "b8798515e34b6138a2941fb2ff113fb38e14fa946f99621d87eee80fcb8a84af",
+    "SCSC": "0f8c32bf59b6b27b7c416d89766f53dc5963d974d78ce2eea021e0119b311162"
+  }
+}
