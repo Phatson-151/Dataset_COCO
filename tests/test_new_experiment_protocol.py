@@ -8,7 +8,7 @@ import numpy as np
 from pycocotools import mask as coco_mask
 from paper_scsc.data import ROOT,mask_of
 from paper_scsc.solver import init_dict,solve_z,solve_d,conv,kernel_fft,make_mask
-from paper_scsc.experiments import infer,BASE,tag,from_cm
+from paper_scsc.experiments import infer,BASE,tag,from_cm,observed_components
 
 
 class ExperimentProtocolTests(unittest.TestCase):
@@ -36,6 +36,12 @@ class ExperimentProtocolTests(unittest.TestCase):
         self.assertAlmostEqual(m['per_class']['Car']['f1'],4/8)
         self.assertAlmostEqual(m['background_FPR'],2/6)
         self.assertAlmostEqual(m['pixel_accuracy'],11/16)
+
+    def test_inpainting_preprocessing_cannot_see_hidden_pixels(self):
+        rng=np.random.default_rng(32);gray=rng.random((51,63),dtype='float32')
+        observed=rng.random(gray.shape)>.5;altered=gray.copy();altered[~observed]=999
+        first=observed_components(gray,observed);second=observed_components(altered,observed)
+        for a,b in zip(first,second):np.testing.assert_array_equal(a,b)
 
     def test_parallel_inference_is_bitwise_identical_to_serial(self):
         rng=np.random.default_rng(21);x=rng.normal(size=(90,107)).astype('float32')*.02

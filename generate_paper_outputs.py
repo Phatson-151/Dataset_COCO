@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-from paper_scsc.experiments import OUT,tag,NAMES,config
+from paper_scsc.experiments import OUT,tag,NAMES,config,original_gray
 from paper_scsc.data import ROOT,manifest
 from native_final import native_image,jwrite
 
@@ -53,8 +53,9 @@ def dictionaries(selection):
             for i,d in enumerate(D):
                 y,x=divmod(i,cols);mosaic[y*(f+1):y*(f+1)+f,x*(f+1):x*(f+1)+f]=d
             ax.imshow(mosaic,cmap='gray',vmin=-vmax,vmax=vmax);ax.axis('off')
-            ax.set_title(f'{"CSC" if cfg["gamma"]==0 else "SCSC"} | K={K} | gamma={cfg["gamma"]:g}')
-        fig.suptitle('Figure 3: all learned native-pixel grayscale filters')
+            status=load(OUT/'checkpoints'/key(cfg)/'completed.json')
+            ax.set_title(f'{"CSC" if cfg["gamma"]==0 else "SCSC"} | K={K} | gamma={cfg["gamma"]:g}\nZ converged {status["z_converged"]}/10; D converged {status["d_converged"]}/10')
+        fig.suptitle('Figure 3: all dictionary filters after 10 outer iterations (native-pixel grayscale)')
         save(fig,folder/f'figure3_K{K}.png')
     pair=selection['paired_models'];fig,axs=plt.subplots(2,3,figsize=(12,7))
     vmax=max(abs(np.load(OUT/'checkpoints'/key(c)/f'outer_{o:02}.npz')['D']).max() for c in pair for o in [1,5,10])
@@ -83,7 +84,7 @@ def maps(selection):
             axs[c,3].imshow(ground,cmap='gray',vmin=0,vmax=1)
             for j,title in enumerate(['Original RGB',f'CSC {name} OVA probability',f'SCSC {name} OVA probability',f'{name} GT']):
                 axs[c,j].set_title(title);axs[c,j].axis('off')
-        fig.suptitle(f'Figure 4 — {id} | previously-seen TEST | fixed probability scale 0–1')
+        fig.suptitle(f'Figure 4 — {id} | previously-seen TEST | K={pair[0]["K"]}, gamma_SCSC={pair[1]["gamma"]:g} | probability scale 0–1')
         save(fig,folder/f'figure4_all_classes_{id}.png')
         for c,name in enumerate(NAMES):
             fig,axs=plt.subplots(1,4,figsize=(16,4))
@@ -91,7 +92,7 @@ def maps(selection):
             axs[2].imshow(arrays[1]['probabilities'][c],cmap='magma',vmin=0,vmax=1)
             axs[3].imshow(np.ma.masked_where(im['ignore'],im['gt'][c].astype(float)),cmap='gray',vmin=0,vmax=1)
             for a,t in zip(axs,['(a) Input',f'(b) CSC {name}',f'(c) SCSC {name}','(d) GT']):a.set_title(t);a.axis('off')
-            fig.suptitle(f'{name} raw OVA probability, ID {id}; shared 0–1 scale')
+            fig.suptitle(f'{name} raw OVA probability, ID {id} | previously-seen TEST | K={pair[0]["K"]}, gamma_SCSC={pair[1]["gamma"]:g} | scale 0–1')
             save(fig,folder/f'figure4_{name}_{id}.png')
         fig,axs=plt.subplots(4,4,figsize=(16,13))
         for c,name in enumerate(NAMES):
@@ -127,10 +128,12 @@ def curves(selection):
                     ax.axhline(fun(baseline,name),label='CSC gamma=0',color='tab:blue')
                     ax.plot([c['gamma'] for c in supervised],[fun(c,name) for c in supervised],'o-',label='SCSC',color='tab:orange')
                     ax.set_xscale('symlog',linthresh=.05)
+                    ax.set_xlim(left=0)
                 else:
                     for arm in [0,1]:
                         selected=sorted([c for c in configs if (c['gamma']>0)==bool(arm)],key=lambda c:c[axis])
                         ax.plot([c[axis] for c in selected],[fun(c,name) for c in selected],'o-',label='SCSC' if arm else 'CSC')
+                    ax.set_xticks(sorted({c[axis] for c in configs}))
                 ax.set_xlabel(dict(gamma='gamma (classification weight)',K='Number of filters K',N='Number of TRAIN images N')[axis])
                 ax.set_ylabel('Pixel AP (0–1)' if row==0 else 'PSNR (dB)');ax.grid(alpha=.25);ax.legend()
                 controls=(f'K=4, N=10' if axis=='gamma' else
@@ -143,7 +146,8 @@ def curves(selection):
                         oa.axhline(line.get_ydata()[0],label=line.get_label(),color=line.get_color())
                     else:
                         oa.plot(line.get_xdata(),line.get_ydata(),marker=line.get_marker(),color=line.get_color(),label=line.get_label())
-                if axis=='gamma':oa.set_xscale('symlog',linthresh=.05)
+                if axis=='gamma':oa.set_xscale('symlog',linthresh=.05);oa.set_xlim(left=0)
+                else:oa.set_xticks(sorted({c[axis] for c in configs}))
                 oa.set_xlabel(ax.get_xlabel());oa.set_ylabel(ax.get_ylabel());oa.set_title(ax.get_title())
                 oa.legend();oa.grid(alpha=.25)
                 save(one,folder/f'figure5_{name or "macro"}_{"abcdef"[row*3+col]}.png')
@@ -155,6 +159,7 @@ def curves(selection):
         ax.axhline(psnr(baseline,name),label='CSC',color='tab:blue')
         ax.plot([c['gamma'] for c in sup],[psnr(c,name) for c in sup],'o-',label='SCSC',color='tab:orange')
         ax.set_xscale('symlog',linthresh=.05);ax.set_xlabel('gamma');ax.set_ylabel('GT-region PSNR (dB)')
+        ax.set_xlim(left=0)
         ax.set_title(name);ax.legend();ax.grid(alpha=.25)
     fig.suptitle('Figure 6 — VAL class-region PSNR | K=4, N=10, beta=.015, alpha=1, 11x11')
     save(fig,outdir('figures/figure6_class_psnr')/'figure6_class_PSNR.png')
@@ -180,7 +185,7 @@ def tables(selection):
         curve.append(dict(id=r['id'],K=c['K'],gamma=c['gamma'],N=c['N'],macro_AP=m['macro_AP_foreground'],PSNR_db=m['PSNR_db_mean_image'],**{f'{n}_AP':m['pooled_pixel_AP'][n] for n in NAMES},**{f'{n}_PSNR_db':m['class_PSNR_db_mean_image'][n] for n in NAMES}))
         val_batches=sum(v['encode']['batch_count'] for v in r['per_image'])
         val_success=sum(v['encode']['converged_batches'] for v in r['per_image'])
-        convrows.append(dict(id=r['id'],seconds=t['seconds'],peak_rss_MiB=t['peak_rss_MiB'],Z_converged=t['z_converged'],D_converged=t['d_converged'],subproblems=t['total_subproblems'],ADMM_convergence_ratio=(t['z_converged']+t['d_converged'])/t['total_subproblems'],training_classifier_successes=sum(v['classifier']['success'] for v in h),fresh_encoding_converged=t['fresh_encoding']['converged'],fresh_classifier_success=t['fresh_classifier']['success'],VAL_encoding_converged_batches=val_success,VAL_encoding_batches=val_batches,VAL_encoding_convergence_ratio=val_success/max(val_batches,1)))
+        convrows.append(dict(id=r['id'],reported_training_wall_s=t['seconds'],timing_notes='Includes recorded restart/wait overhead; not a speed benchmark' if (OUT/'checkpoints'/r['id']/'resume_event.json').exists() else 'Single process wall time under shared CPU load',peak_rss_MiB=t['peak_rss_MiB'],Z_converged=t['z_converged'],D_converged=t['d_converged'],subproblems=t['total_subproblems'],ADMM_convergence_ratio=(t['z_converged']+t['d_converged'])/t['total_subproblems'],training_classifier_successes=sum(v['classifier']['success'] for v in h),fresh_encoding_converged=t['fresh_encoding']['converged'],fresh_classifier_success=t['fresh_classifier']['success'],VAL_encoding_converged_batches=val_success,VAL_encoding_batches=val_batches,VAL_encoding_convergence_ratio=val_success/max(val_batches,1)))
         D=np.load(OUT/'checkpoints'/r['id']/'model.npz')['D'].reshape(c['K'],-1)
         dn=D/np.maximum(np.linalg.norm(D,axis=1,keepdims=True),1e-12);corr=np.abs(dn@dn.T);off=corr[~np.eye(c['K'],dtype=bool)]
         diversity.append(dict(id=r['id'],mean_absolute_filter_correlation=float(off.mean()),max_absolute_filter_correlation=float(off.max()),max_filter_norm=float(np.linalg.norm(D,axis=1).max())))
@@ -199,7 +204,7 @@ def tables(selection):
                 a=a[np.ix_(order,order)];ax.imshow(a,cmap='Blues');ax.set_xticks(range(4),[NAMES[i] for i in order],rotation=30);ax.set_yticks(range(4),[NAMES[i] for i in order]);ax.set_xlabel('Prediction');ax.set_ylabel('Ground truth');ax.set_title(title)
                 for y in range(4):
                     for x in range(4):ax.text(x,y,f'{a[y,x]:.2f}' if title!='Pixel counts' else str(int(a[y,x])),ha='center',va='center',fontsize=8)
-            fig.suptitle(f'{arm} | {split} | all class confusions retained')
+            fig.suptitle(f'{arm} | {"previously-seen TEST" if split=="test_sealed" else "VAL"} | all class confusions retained')
             save(fig,outdir('figures/confusion_matrices')/f'{arm}_{split}.png')
             csvwrite(outdir('tables/multiclass_metrics')/f'confusion_{arm}_{split}.csv',[
                 dict(GT=NAMES[y],**{NAMES[x]:int(cm[y,x]) for x in order}) for y in order])
@@ -218,8 +223,9 @@ def tables(selection):
         im=native_image(e);arrays=[np.load(OUT/'inpainting'/f'{key(c)}_{im["id"]}.npz') for c in pair]
         assert np.array_equal(arrays[0]['observed'],arrays[1]['observed'])
         fig,axs=plt.subplots(1,4,figsize=(16,4))
-        images=[im['x']+im['low'],arrays[0]['masked'],arrays[0]['reconstruction'],arrays[1]['reconstruction']]
+        images=[original_gray(im),arrays[0]['masked'],arrays[0]['reconstruction'],arrays[1]['reconstruction']]
         for ax,image,title in zip(axs,images,['Original grayscale','50% missing (zeroed)','CSC inpainting','SCSC inpainting']):ax.imshow(image,cmap='gray',vmin=0,vmax=1);ax.set_title(title);ax.axis('off')
+        fig.suptitle(f'ID {im["id"]} | previously-seen TEST | K={pair[0]["K"]}, gamma_SCSC={pair[1]["gamma"]:g} | shared mask')
         save(fig,outdir('figures/inpainting')/f'inpainting_{im["id"]}.png')
     fig,ax=plt.subplots(figsize=(8,4))
     for arm in ['CSC','SCSC']:
@@ -295,9 +301,25 @@ def additional_metrics(selection):
     csvwrite(outdir('tables/table1_gamma_ap_psnr')/'table1_TEST_selected_only.csv',table)
 
 
+def training_coverage():
+    rows=[]
+    for p in sorted((OUT/'checkpoints').glob('*/training_bank.json')):
+        bank=load(p);cfg=load(p.parent/'config.json');T=cfg['tile']
+        for image in bank['images']:
+            h,w=image['native_shape'];covered=np.zeros((h,w),bool);fitted=np.zeros((h,w),bool)
+            tiles=[t for t in bank['tiles'] if t['image_id']==image['image_id']]
+            for tile in tiles:
+                y,x=tile['origin_yx'];covered[y:y+T,x:x+T]=True
+                edge=cfg['filter_size']-1;fitted[y+edge:y+T,x+edge:x+T]=True
+            rows.append(dict(id=p.parent.name,image_id=image['image_id'],tiles=len(tiles),
+                native_pixels=h*w,unique_sampled_pixels=int(covered.sum()),sampled_fraction=float(covered.mean()),
+                unique_reconstruction_pixels=int(fitted.sum()),reconstruction_fraction=float(fitted.mean())))
+    csvwrite(outdir('tables')/'native_training_coverage.csv',rows)
+
+
 def main():
     selection=load(OUT/'experiment_configs/selection.json')
-    dictionaries(selection);maps(selection);curves(selection);tables(selection);convergence();bootstrap(selection);additional_metrics(selection)
+    dictionaries(selection);maps(selection);curves(selection);tables(selection);convergence();bootstrap(selection);additional_metrics(selection);training_coverage()
     jwrite(OUT/'REPORT_METRICS.json',dict(selection=selection,
         VAL={('CSC' if c['gamma']==0 else 'SCSC'):result(c)['aggregate'] for c in selection['paired_models']},
         TEST_PREVIOUSLY_SEEN={('CSC' if c['gamma']==0 else 'SCSC'):result(c,'test_sealed')['aggregate'] for c in selection['paired_models']}))

@@ -37,6 +37,7 @@ def main():
         'แก้ boundary mask ให้ตรงกับ causal top-left kernel anchor: ตัด first f-1 rows/columns ที่ wrap ไม่ใช้ symmetric f//2 ที่ยังเหลือ circular artifacts ตรวจเทียบกับ direct linear convolution และ adjoint identity D ที่คืนต้องเป็น compact feasible dictionary; หากผล feasible ทำให้ objective แย่กว่าเดิม จะยังไม่ยอมรับว่า converge และป้องกันการคืน dictionary ที่แย่ลง', '',
         '## 7. Experimental setup', '',
         'CPU quota 4 cores, RAM 32 GiB, ไม่มี GPU ใช้ BLAS หนึ่ง thread ต่อ subprocess, training seed=42 จำนวน outer iterations=10 ทุก candidate, atol=1e-4, rtol=.003, max ADMM=1000 และ residual-balanced adaptive rho ไม่ผ่อน tolerance เพื่อให้ผ่าน', '',
+        'Runtime เป็น process wall time ใน Cloud ที่มีงานขนาน ไม่ใช่ controlled method-speed benchmark กรณี resume รวม process segments และค่า restart/งานที่ยกเลิก/การรอ lock ตาม resume_event.json จึงไม่ใช่เวลาคำนวณสุทธิหรือ end-to-end latency ที่ใช้เปรียบเทียบความเร็ว CSC/SCSC โดยตรง เก็บ D/theta checkpoint เดิมและ reinitialize Z ก่อนแก้ convex Z-step เดิม source/retained-prefix hashes ทำให้ตรวจได้ว่ารอบก่อนหน้าไม่ได้ถูกเขียนทับ', '',
         '**Native resolution:** ใช้ RGB ต้นฉบับสำหรับแสดงผล แปลง grayscale สำหรับ sparse optimization โดยไม่มี resize ฝึกสี่ intact 64x64 native crops/ภาพ ใช้ global D ร่วมทั้ง tile bank ไม่ใช่ global full-frame D การ inference เป็น overlapping tiles ที่มี reflected context และ blend เฉพาะ valid interior ครอบคลุมทุกพิกเซลในขนาดต้นฉบับ', '',
         'Full-frame feasibility pilot: TRAIN 10 ภาพ pad เท่านั้นเป็น 640x640, K=4; Z 10 ขั้นใช้ 36.58 วินาที และ D 10 ขั้น 7.64 วินาที ทั้งคู่ยังไม่ converge เป็น `inconclusive` pilot ไม่ใช่ผลฝึกสำเร็จ รายงานนี้จึงไม่เรียกการทดลองหลักว่า exact full-image optimization', '',
         '## 8. Hyperparameter search', '',
@@ -121,11 +122,44 @@ def main():
             jwrite(OUT/'metrics/ADMM_solver_fix_comparison.json',comparison)
             lines+=['',f'เปรียบเทียบ K=4, gamma=1 first alternating step: รุ่นเดิม maxiter=5000 Z-converged={previous["Z"]["converged"]}; รุ่นแก้ maxiter=1000 Z-converged={current["z_admm"]["converged"]} ใน {current["z_admm"]["iterations"]} ขั้น ไม่ย้ายผล diagnostic มาแทนผลฝึก 10 outer iterations']
         record=read(recovery);record['status']='corrected_primary_sweep_completed_and_artifacts_verified';jwrite(recovery,record)
+    nblock=['| N (K=4 fixed, VAL) | CSC foreground AP | SCSC foreground AP | CSC PSNR dB | SCSC PSNR dB |','|---|---:|---:|---:|---:|']
+    counts=[]
+    for n in sorted({c['N'] for c in s['N_configs']}):
+        configs=[c for c in s['N_configs'] if c['N']==n]
+        baseline=next(c for c in configs if c['gamma']==0);supervised=next(c for c in configs if c['gamma']>0)
+        values=[]
+        for c in [baseline,supervised]:
+            k=tag(c['K'],c['gamma'],c['N']);values.append(read(OUT/'metrics'/f'{k}_val.json')['aggregate'])
+        nblock.append(f'| {n} | {values[0]["macro_AP_foreground"]:.6f} | {values[1]["macro_AP_foreground"]:.6f} | {values[0]["PSNR_db_mean_image"]:.6f} | {values[1]["PSNR_db_mean_image"]:.6f} |')
+        bank=read(OUT/'checkpoints'/tag(4,0,n)/'training_bank.json')
+        counts.append(f'N={n}: {bank["label_counts_per_class"]}')
+    nblock+=['','จำนวน labeled anchor entries (positive+negative) ตามลำดับ Person/Car/Motorcycle/Background: '+ '; '.join(counts)+'. Positive/negative สมดุลภายในแต่ละ head เมื่อมีข้อมูล แต่ยอดรวมระหว่าง heads ต่างกันตาม coverage ไม่ตีความ N curve ว่าแยกผลจำนวนภาพจากความหลากหลายของภาพ/สัดส่วนคลาสได้สมบูรณ์','',
+        'ขอบเขตพิกเซล TRAIN ที่สุ่มจริงและ unique reconstruction-support pixels หลัง boundary mask อยู่ tables/native_training_coverage.csv แยก raw crop area กับ data-term area; lowpass preprocessing อ่านภาพต้นฉบับเต็ม แต่ dictionary optimization ใช้เฉพาะ tile bank','']
+    lines[lines.index('## 9. Figure 3 results'):lines.index('## 9. Figure 3 results')]=nblock
+    penalty=OUT/'metrics/D_penalty_conditioning_diagnostic.json'
+    if penalty.exists():
+        p=read(penalty)
+        lines+=['','## Additional penalty diagnostic (not adopted)','',
+            'ทดสอบ K=32, gamma=2 first D-step ด้วย native TRAIN bank เดิม ลด adaptive rho floor จาก 1/64 เป็น 1e-6 โดยคง maxiter=1000 และ atol/rtol เดิม ไม่ใช้ TEST ในการทดลองนี้', '',
+            '| Rho floor | D converged | Final primal / tolerance | Final dual / tolerance | Candidate feasible objective |','|---|---|---:|---:|---:|']
+        for name,d in [('1/64',p['previous_floor_D']),('1e-6',p['lower_floor_D'])]:
+            last=d['residuals'][-1]
+            lines.append(f'| {name} | {d["converged"]} | {last["primal_relative"]:.6f} | {last["dual_relative_proxy"]:.6f} | {d["candidate_feasible_objective"]:.6f} |')
+        lines+=['','ทั้งสองแบบยังไม่ผ่านและ candidate ที่ทำให้ objective แย่ลงถูกปฏิเสธ จึงไม่ใช้ setting ใหม่ใน primary sweep ผลนี้แสดงว่าเพิ่มช่วง rho อย่างเดียวไม่แก้ conditioning/finite-budget convergence ทุกกรณี ไม่ผ่อน tolerance เพื่อเปลี่ยน failure ให้เป็น pass']
     lines+=['','Implementation provenance: ระหว่างพัฒนาได้ลด redundant FFT โดย reuse zf/dhat ตามสมการเดิม คง objective และ stopping criteria เดิม มี independent scalar/high-K epigraph optimizer tests รองรับ เฉพาะ baseline CSC K=100 ที่เริ่มก่อน optimization ใช้รุ่น FFT เดิมต่อจนจบ ส่วน SCSC รุ่นผิดถูกเก็บเป็น failure evidence และฝึกใหม่; ไม่เรียกผลจาก profiler ว่าเป็น training result ดู profiling_summary.json และ software metadata โดยไม่อ้าง bitwise identity ระหว่าง implementation revisions']
     (OUT/'FINAL_REPORT_TH.md').write_text('\n'.join(lines)+'\n')
     (OUT/'PROJECT_STATUS_TH.md').write_text('# สถานะผลใหม่\n\nอ่าน FINAL_REPORT_TH.md และ verification.json\n\n'
         f'Artifact consistency: ผ่าน; primary ADMM ไม่ converge {len(v["nonconverged_primary_subproblems"])} รายการ; '
         'TEST ไม่อิสระ; N>=20 และ cross-dataset inpainting ไม่ได้รัน; ไม่ใช่ Fully Verified Final\n')
+    jwrite(OUT/'GOAL_STATUS.json',dict(status='experiments_completed_with_scientific_limitations',
+        artifact_consistency_passed=v['artifact_consistency_passed'],fully_verified_final=False,
+        independent_unseen_generalization_confirmed=False,
+        all_primary_subproblems_converged=v['all_primary_subproblems_converged'],
+        per_class_seen_test={n:dict(IoU_increased=b['per_class'][n]['iou']>a['per_class'][n]['iou'],
+            AP_increased=b['pooled_pixel_AP'][n]>a['pooled_pixel_AP'][n]) for n in NAMES},
+        metric_deltas_SCSC_minus_CSC={name:b[name]-a[name] for name in ['macro_AP_foreground','macro_AP_all_classes','foreground_mIoU','all_class_mIoU','background_FPR','PSNR_db_mean_image','SSIM_mean_image']},
+        unavailable=['new independent TEST','N>=20','other-dataset inpainting'],
+        note='Improvements on these five previously-seen images do not establish unseen-data superiority'))
     print('Thai report written from verified new results')
 
 

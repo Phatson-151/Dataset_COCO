@@ -13,6 +13,7 @@ import csv
 import fcntl
 import hashlib
 import json
+import marshal
 import platform
 import resource
 import subprocess
@@ -88,9 +89,7 @@ def _train(cfg):
     jwrite(path/'config.json',cfg)
     prior_history=json.loads((path/'history.json').read_text()) if (path/'history.json').exists() else []
     software_file=path/(f'software_resume_{len(prior_history):02}.json' if prior_history else 'software.json')
-    jwrite(software_file,dict(source_commit=source_revision(),
-        file_sha256={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
-            for name in ['paper_scsc/solver.py','paper_scsc/experiments.py','paper_scsc/data.py','native_final.py']},
+    jwrite(software_file,dict(**IMPORTED_SOFTWARE,
         note='Safeguarded logistic prox, stable SVD D systems, cached FFT work; global ADMM criteria unchanged.'))
     start=time.time();X,Y,bank,profile=bank_for(cfg)
     bank_record={'images':profile,'tiles':[
@@ -155,7 +154,7 @@ def _train(cfg):
     np.savez_compressed(path/'model.npz',D=D,W=We,b=be,W_training=W,b_training=b)
     summary=dict(id=key,config=cfg,status='completed',seconds=time.time()-start,
         peak_rss_MiB=max(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,event.get('prior_peak_rss_MiB',0)),
-        timing_scope='Sum of active training-process wall segments; checkpoint/resume metadata retain any interruptions',
+        timing_scope='Training-process wall time; resumed jobs include recorded segment/restart/wait overhead, not a controlled speed benchmark',
         z_converged=sum(r['z_admm']['converged'] for r in history),
         d_converged=sum(r['d_admm']['converged'] for r in history),
         total_subproblems=2*cfg['outer'],bootstrap_encoding=bootstrap_z,
@@ -210,6 +209,18 @@ def psnr(a,b,mask=None):
     e=(a-b)**2
     if mask is not None:e=e[mask]
     return float(-10*np.log10(max(float(np.mean(e)),1e-12))) if e.size else None
+
+
+def original_gray(im):
+    return cv2.cvtColor(im['rgb'],cv2.COLOR_RGB2GRAY).astype('float32')/255
+
+
+def observed_components(gray,observed):
+    """Inpainting input decomposition, with no access to hidden pixel values."""
+    masked=np.where(observed,gray,0.)
+    low=gaussian_filter(masked,2)/np.maximum(gaussian_filter(observed.astype('float32'),2),1e-8)
+    high=np.where(observed,gray-low,0)
+    return high,low,masked
 
 
 def metrics(im,scores,reconstruction,diag):
@@ -290,13 +301,12 @@ def inpaint(cfg):
     key=tag(cfg['K'],cfg['gamma'],cfg['N']);model=np.load(OUT/'checkpoints'/key/'model.npz')
     D,W,b=[model[k] for k in ('D','W','b')];rows=[]
     for e in manifest()['test_sealed']:
-        im=native_image(e);original=im['x']+im['low'];rng=np.random.default_rng(SEED+im['id'])
+        im=native_image(e,with_targets=False);original=original_gray(im);rng=np.random.default_rng(SEED+im['id'])
         observed=np.ones(original.size,bool);observed[rng.choice(original.size,original.size//2,replace=False)]=False
         observed=observed.reshape(original.shape)
         # Lowpass uses ONLY observed pixels. Never reuse complete-image lowpass.
-        masked=np.where(observed,original,0.)
-        low=gaussian_filter(masked,2)/np.maximum(gaussian_filter(observed.astype('float32'),2),1e-8)
-        _,high,diag=infer(np.where(observed,original-low,0),D,W,b,cfg,observed.astype('float32'))
+        signal,low,masked=observed_components(original,observed)
+        _,high,diag=infer(signal,D,W,b,cfg,observed.astype('float32'))
         reconstruction=high+low
         rows.append(dict(image_id=im['id'],PSNR_all_db=psnr(original,reconstruction),
             PSNR_missing_db=psnr(original,reconstruction,~observed),
@@ -317,10 +327,17 @@ def main():
     p.add_argument('--K',type=int,default=4);p.add_argument('--gamma',type=float,default=.2)
     p.add_argument('--N',type=int,default=10);p.add_argument('--split',default='val')
     a=p.parse_args();cfg=config(a.K,a.gamma,a.N)
-    if a.action=='inpaint' or a.split=='test_sealed':cfg['eval_workers']=4
+    if a.action=='inpaint' or a.split=='test_sealed' or (a.action=='eval' and a.K>=100):cfg['eval_workers']=4
     if a.action=='train':train(cfg)
     elif a.action=='eval':evaluate(cfg,a.split)
     else:inpaint(cfg)
 
+
+IMPORTED_SOFTWARE=dict(source_commit=source_revision(),
+    file_sha256={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
+        for name in ['paper_scsc/solver.py','paper_scsc/experiments.py','paper_scsc/data.py','native_final.py']},
+    loaded_function_bytecode_sha256={f.__name__:hashlib.sha256(marshal.dumps(f.__code__)).hexdigest()
+        for f in [solve_z,solve_d,fit_cls,_train]},
+    fingerprint_scope='Captured at module import, before waiting on any model lock')
 
 if __name__=='__main__':main()

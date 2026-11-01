@@ -219,8 +219,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# New experiment arrays are included in the cloud ZIP, not Git history.
+# Ignore generated arrays during development; validated release files are added explicitly.
 final output/checkpoints/*/*.npz
+final output/checkpoints/*/retained_prefix/*.npz
 final output/checkpoints/*.lock
 final output/metrics/*.lock
 final output/score_maps/*.npz

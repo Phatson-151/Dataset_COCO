@@ -28,6 +28,7 @@ def main():
         'DATA_ATTRIBUTION.md','SCSC_COCO_MASTER_PROMPT_CODEX_CLOUD_REVISED.txt']
     for name in source:entries[name]=ROOT/name
     entries['README.md']=ROOT/'README_NEW_EXPERIMENTS.md'
+    entries['PROJECT_STATUS_TH.md']=OUT/'PROJECT_STATUS_TH.md'
     for path in (ROOT/'paper_scsc').glob('*.py'):entries[str(path.relative_to(ROOT))]=path
     for name in ['test_native_pipeline.py','test_numerical_solver.py','test_new_experiment_protocol.py']:
         entries[f'tests/{name}']=ROOT/'tests'/name
@@ -35,6 +36,7 @@ def main():
         for path in sorted(folder.rglob('*')):
             if not path.is_file() or path.suffix=='.lock' or 'pilot' in path.parts or '__pycache__' in path.parts:continue
             if 'failed_attempts' in path.parts and path.suffix not in ['.json','.log','.md','.txt']:continue
+            if 'retained_prefix' in path.parts and path.suffix=='.npz':continue
             entries[str(path.relative_to(ROOT))]=path
     manifest={name:dict(bytes=p.stat().st_size,sha256=sha(p)) for name,p in entries.items()}
     with zipfile.ZipFile(archive,'w',allowZip64=True) as z:

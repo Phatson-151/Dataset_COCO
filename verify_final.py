@@ -9,7 +9,7 @@ from scipy.special import expit
 from sklearn.metrics import average_precision_score
 from native_final import native_image,jwrite,NAMES
 from paper_scsc.data import ROOT,manifest
-from paper_scsc.experiments import OUT,tag,source_revision
+from paper_scsc.experiments import OUT,tag,source_revision,original_gray
 
 
 def read(p):return json.loads(Path(p).read_text())
@@ -28,6 +28,19 @@ def main():
         r=read(p);h=read(p.parent/'history.json');cfg=read(p.parent/'config.json')
         assert len(h)==cfg['outer']==10
         assert len(list(p.parent.glob('outer_*.npz')))==10
+        event=p.parent/'resume_event.json'
+        if event.exists():
+            resume=read(event)
+            if 'retained_prefix_outer1_sha256' in resume:
+                assert digest(p.parent/'outer_01.npz')==resume['retained_prefix_outer1_sha256']
+                prefix=read(p.parent/'retained_prefix/history.json')
+                assert h[:len(prefix)]==prefix,'A persisted prefix was overwritten during resume'
+        for checkpoint in p.parent.glob('outer_*.npz'):
+            state=np.load(checkpoint)
+            assert state['D'].shape==(cfg['K'],cfg['filter_size'],cfg['filter_size'])
+            assert state['W'].shape==(4,cfg['K']) and state['b'].shape==(4,)
+            assert all(np.isfinite(state[name]).all() for name in state.files)
+            assert np.linalg.norm(state['D'],axis=(1,2)).max()<=1.00001
         if cfg['gamma']>0:
             assert (p.parent/'software.json').exists(), 'Supervised model lacks corrected-solver provenance'
         model_count+=1
@@ -91,7 +104,7 @@ def main():
     for k in ids:
         inp=read(OUT/'metrics'/f'{k}_inpainting.json')
         for e in manifest()['test_sealed']:
-            im=native_image(e);original=im['x']+im['low']
+            im=native_image(e);original=original_gray(im)
             a=np.load(OUT/'inpainting'/f'{k}_{im["id"]}.npz')
             b=np.load(OUT/'inpainting'/f'{ids[1] if k==ids[0] else ids[0]}_{im["id"]}.npz')
             observed=a['observed'];assert observed.shape==original.shape
@@ -126,6 +139,12 @@ def main():
             assert (OUT/f'figures/figure5_ap_psnr/figure5_{name}{suffix}.png').is_file()
     for c in selection['gamma_configs']+selection['K_configs']+selection['N_configs']:
         k=tag(c['K'],c['gamma'],c['N']);assert (OUT/'metrics'/f'{k}_val.json').exists()
+    bank_hashes={}
+    for p in (OUT/'checkpoints').glob('*/training_bank.json'):
+        c=read(p.parent/'config.json');bank=read(p)
+        hashes=(bank['tile_signals_sha256'],bank['tile_labels_sha256'])
+        if c['N'] in bank_hashes:assert bank_hashes[c['N']]==hashes,'Mismatched TRAIN pixels/anchors across paired sweeps'
+        bank_hashes[c['N']]=hashes
     status=read(OUT/'experiment_configs/experiment_status.json')
     for p in (OUT/'checkpoints').glob('*/completed.json'):
         c=read(p)
@@ -153,7 +172,8 @@ def main():
     jwrite(OUT/'verification.json',report)
     inventory={str(p.relative_to(ROOT)):digest(p) for p in sorted(OUT.rglob('*'))
         if p.is_file() and p.name!='SHA256SUMS.json' and p.suffix!='.lock' and 'pilot' not in p.parts
-        and ('failed_attempts' not in p.parts or p.suffix in ['.json','.log','.md','.txt'])}
+        and ('failed_attempts' not in p.parts or p.suffix in ['.json','.log','.md','.txt'])
+        and not ('retained_prefix' in p.parts and p.suffix=='.npz')}
     jwrite(OUT/'SHA256SUMS.json',inventory)
     print(json.dumps({k:v for k,v in report.items() if k!='nonconverged_primary_subproblems'},indent=2))
 
