@@ -1,0 +1,208 @@
+"""Paper Eq (5), Eq (6/7), Algorithm 1/2; FFT-domain *scaled* ADMM.
+
+Uses circular convolutions with a reconstruction boundary mask. Both Z and D
+subproblems are split ADMM; classifier via L-BFGS (the paper says GD, this is
+an explicitly disclosed solver substitution, for faster convex convergence).
+Full supervised sparse codes during training: matches paper, unlike task-driven.
+"""
+from dataclasses import dataclass
+import time
+import numpy as np
+from scipy.fft import rfft2,irfft2
+from scipy.optimize import minimize
+from scipy.special import expit
+
+DT=np.float32
+
+def four(a):return rfft2(a,axes=(-2,-1),workers=1)
+def back(a,sh):return irfft2(a,s=sh,axes=(-2,-1),workers=1).astype(DT)
+def kernel_fft(D,hw):
+    h,w=hw;f=D.shape[-1]
+    padded=np.zeros((len(D),h,w),DT)
+    padded[:,:f,:f]=D
+    return four(padded)
+def conv(Df,Z):return back(np.sum(Df[None]*four(Z),axis=1),Z.shape[-2:])
+def adj(Df,x):return back(np.conj(Df)[None]*four(x)[:,None],x.shape[-2:])
+def soft(a,t):return np.sign(a)*np.maximum(np.abs(a)-t,0.)
+def proj(D,f):
+    # Compact support + Euclidean unit BALL (paper), not unit sphere.
+    out=np.zeros_like(D);out[:,:f,:f]=D[:,:f,:f]
+    norm=np.sqrt((out*out).sum((1,2),keepdims=True))
+    return out/np.maximum(1,norm)
+def sigmoid_loss_grad(Z,W,b,labels,alpha):
+    feat=np.moveaxis(Z,1,-1)
+    coords=np.where(labels!=0)
+    n,c,y,x=coords
+    yy=labels[coords].astype(DT)
+    if len(yy)==0:raise ValueError('No supervision points')
+    X=feat[n,y,x,:]
+    logits=np.sum(X*W[c],axis=1)+b[c]
+    L=np.logaddexp(0,-yy*logits).sum()+alpha*(np.square(W).sum()+np.square(b).sum())
+    gradlog=-yy*expit(-yy*logits)
+    gw=np.zeros_like(W);gb=np.zeros_like(b)
+    np.add.at(gw,c,gradlog[:,None]*X)
+    np.add.at(gb,c,gradlog)
+    return float(L),gw+2*alpha*W,gb+2*alpha*b
+
+def fit_cls(Z,labels,W,b,alpha=1., maxiter=100):
+    K=Z.shape[1];C=W.shape[0]
+    def fg(v):
+        a=v[:C*K].reshape(C,K);bb=v[C*K:]
+        L,g,bg=sigmoid_loss_grad(Z,a,bb,labels,alpha)
+        return L,np.r_[g.ravel(),bg].astype('float64')
+    opt=minimize(fg,np.r_[W.ravel(),b].astype('float64'),jac=True,method='L-BFGS-B',options={'maxiter':maxiter,'gtol':1e-5,'ftol':1e-10})
+    return opt.x[:C*K].reshape(C,K).astype(DT),opt.x[C*K:].astype(DT),{'iterations':int(opt.nit),'success':bool(opt.success),'loss':float(opt.fun),'message':str(opt.message)}
+
+def make_mask(hw,f):
+    h,w=hw
+    M=np.ones((h,w),DT)
+    edge=f//2
+    M[:edge,:]=0;M[-edge:,:]=0;M[:,:edge]=0;M[:,-edge:]=0
+    return M
+
+def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M_override=None):
+    """ADMM split u0=D*z, u1=z, u2=W*z; all exact proximal operators."""
+    N,H,WW=x.shape;K=len(D);C=len(W);shape=(H,WW)
+    Df=kernel_fft(D,shape)
+    # Rank-K block inversion in Fourier domain; 3-head W Gram is spatially constant.
+    df=np.moveaxis(Df,-1,0) if False else Df.reshape(K,-1).T
+    A=np.einsum('fk,fl->fkl',df.conj(),df,optimize=True)
+    A+=(np.eye(K,dtype=A.dtype)+(W.T@W)).reshape(1,K,K)
+    Ainv=np.linalg.inv(A)
+    Ainv=Ainv.reshape(H,WW//2+1,K,K)
+    M=make_mask(shape,D.shape[-1]) if M_override is None else M_override;M0=M[None] if M.ndim==2 else M
+    z=np.zeros((N,K,H,WW),DT) if zinit is None else zinit.copy()
+    u0=conv(Df,z);u1=z.copy();u2=np.einsum('ck,nkhw->nchw',W,z,optimize=True)
+    lam0=np.zeros_like(u0);lam1=np.zeros_like(z);lam2=np.zeros_like(u2)
+    trace=[]; converged=False
+    for it in range(maxiter):
+        # FFT solve of block linear system, using all channels and all examples.
+        R0=four(u0-lam0);R1=four(u1-lam1)
+        R2=four(u2-lam2)
+        rhs=np.conj(Df)[None]*R0[:,None]+R1+np.einsum('ck,nchw->nkhw',W,R2,optimize=True)
+        zf=np.einsum('hwkl,nlhw->nkhw',Ainv,rhs,optimize=True)
+        z=back(zf,shape)
+        q0=conv(Df,z);q2=np.einsum('ck,nkhw->nchw',W,z,optimize=True)
+        old0=u0;old1=u1;old2=u2
+        a0=q0+lam0
+        u0=(M0*x+rho*a0)/(M0+rho)
+        u1=soft(z+lam1,beta/rho)
+        u2=q2+lam2
+        if gamma>0 and labels is not None:
+            # Prox of gamma*log(1+exp(-y*(v+b))). Newton updates with a
+            # stationarity check; 8 iterations can be insufficient for high gamma.
+            # Hessian >= rho > 0 guarantees a unique proximal minimizer.
+            mask=labels!=0; yy=labels[mask].astype(DT)
+            a=u2[mask];v=a.copy();bb=np.broadcast_to(b[None,:,None,None],u2.shape)[mask]
+            for _ in range(32):
+                s=expit(-yy*(v+bb))
+                g=rho*(v-a)-gamma*yy*s
+                h=rho+gamma*s*(1-s)
+                step=np.clip(g/h,-25.0,25.0)
+                v-=step
+                if np.max(np.abs(g)) < 2e-5: break
+            u2[mask]=v
+        lam0+=q0-u0;lam1+=z-u1;lam2+=q2-u2
+        if it==0 or (it+1)%10==0 or it==maxiter-1:
+            r2=np.sum((q0-u0)**2)+np.sum((z-u1)**2)+np.sum((q2-u2)**2)
+            ds=adj(Df,u0-old0)+(u1-old1)+np.einsum('ck,nchw->nkhw',W,u2-old2,optimize=True)
+            s2=rho*rho*np.sum(ds*ds)
+            norm=np.sqrt(np.sum(q0*q0)+np.sum(z*z)+np.sum(q2*q2))
+            dualnorm=np.sqrt(np.sum(u0*u0)+np.sum(u1*u1)+np.sum(u2*u2))
+            ldual=adj(Df,lam0)+lam1+np.einsum('ck,nchw->nkhw',W,lam2,optimize=True)
+            eps_pri=np.sqrt(q0.size+z.size+q2.size)*1e-4+tol*max(norm,dualnorm)
+            eps_dual=np.sqrt(z.size)*1e-4+tol*rho*np.linalg.norm(ldual)
+            pr=float(np.sqrt(r2));dr=float(np.sqrt(s2))
+            trace.append({'iter':it+1,'primal_residual':pr,'dual_residual':dr,
+                          'primal_tolerance':float(eps_pri),'dual_tolerance':float(eps_dual),
+                          'primal_relative':float(pr/max(eps_pri,1e-12)),
+                          'dual_relative_proxy':float(dr/max(eps_dual,1e-12))})
+            if it>=9 and pr<=eps_pri and dr<=eps_dual:
+                converged=True;break
+    return z,{'iterations':it+1,'converged':converged,'residuals':trace,'maxiter':maxiter,'tolerance':tol}
+
+def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003):
+    """Paper boundary-masked D ADMM: split v0=Z*d, v1=d in unit ball.
+
+    FFT update (Z*Z+I)d = Z*(v0-lambda0)+(v1-lambda1).
+    The reconstruction mask is inside the v0 proximity operation.
+    """
+    N,K,H,W=Z.shape;f=D0.shape[-1];sh=(H,W)
+    Zf=four(Z);Xf=four(x)
+    zmat=Zf.reshape(N,K,-1).transpose(2,0,1)
+    A=np.einsum('fnk,fnl->fkl',zmat.conj(),zmat,optimize=True)
+    A+=np.eye(K,dtype=A.dtype)
+    Ainv=np.linalg.inv(A).reshape(H,W//2+1,K,K)
+    v1=proj(np.pad(D0,((0,0),(0,H-f),(0,W-f))),f)
+    lam1=np.zeros_like(v1)
+    v0=back(np.sum(four(v1)[None]*Zf,axis=1),sh)
+    lam0=np.zeros_like(v0)
+    M=make_mask(sh,f)[None]
+    trace=[];converged=False
+    for i in range(maxiter):
+        rhs=np.einsum('nkhw,nhw->khw',Zf.conj(),four(v0-lam0),optimize=True)+four(v1-lam1)
+        dhat=np.einsum('hwkl,lhw->khw',Ainv,rhs,optimize=True)
+        d=back(dhat,sh)
+        q0=back(np.sum(four(d)[None]*Zf,axis=1),sh)
+        old0=v0;old1=v1
+        v0=(M*x+rho*(q0+lam0))/(M+rho)
+        v1=proj(d+lam1,f)
+        lam0+=(q0-v0);lam1+=(d-v1)
+        if i==0 or (i+1)%10==0 or i==maxiter-1:
+            pr=np.sqrt(np.sum((q0-v0)**2)+np.sum((d-v1)**2))
+            ds=rho*(back(np.einsum('nkhw,nhw->khw',Zf.conj(),four(v0-old0),optimize=True),sh)+(v1-old1))
+            du=np.linalg.norm(ds)
+            n_pr=np.sqrt(np.sum(q0*q0)+np.sum(d*d))
+            n_aux=np.sqrt(np.sum(v0*v0)+np.sum(v1*v1))
+            ldual=back(np.einsum('nkhw,nhw->khw',Zf.conj(),four(lam0),optimize=True),sh)+lam1
+            eps_pri=np.sqrt(q0.size+d.size)*1e-4+tol*max(n_pr,n_aux)
+            eps_dual=np.sqrt(d.size)*1e-4+tol*rho*np.linalg.norm(ldual)
+            trace.append({'iter':i+1,'primal_residual':float(pr),'dual_residual':float(du),
+                          'primal_tolerance':float(eps_pri),'dual_tolerance':float(eps_dual),
+                          'primal_relative':float(pr/max(eps_pri,1e-12)),
+                          'dual_relative_proxy':float(du/max(eps_dual,1e-12))})
+            if i>=9 and pr<=eps_pri and du<=eps_dual:
+                converged=True;break
+    return v1[:,:f,:f].copy(),{'iterations':i+1,'converged':converged,'residuals':trace,'maxiter':maxiter,'tolerance':tol}
+
+def objective(x,Z,D,W,b,labels,beta,gamma,alpha):
+    R=conv(kernel_fft(D,x.shape[-2:]),Z)-x
+    M=make_mask(x.shape[-2:],D.shape[-1])
+    re=.5*np.square(R*M).sum();sp=beta*np.abs(Z).sum()
+    if gamma>0 and labels is not None:
+        cl,_,_=sigmoid_loss_grad(Z,W,b,labels,alpha)
+    else:cl=0
+    return {'reconstruction':float(re),'sparsity':float(sp),'classification':float(cl),'total':float(re+sp+gamma*cl)}
+
+def init_dict(x,K,f,seed=42):
+    rng=np.random.default_rng(seed)
+    D=np.stack([x[rng.integers(len(x)),rng.integers(x.shape[-2]-f+1):][:f,:f] for _ in range(0)]) if False else rng.normal(size=(K,f,f)).astype(DT)
+    D-=D.mean((1,2),keepdims=True)
+    D/=np.maximum(np.linalg.norm(D,axis=(1,2),keepdims=True),1e-8)
+    return D
+
+def train(items,gamma=0.,K=8,f=9,beta=.015,alpha=1.,seed=42,outer=3,admm_max=150,tol=.003,per_class=80,cls_max=100,D0=None,snapshot_hook=None,bootstrap_classifier=True):
+    x=np.stack([p['x'] for p in items]).astype(DT)
+    D=init_dict(x,K,f,seed) if D0 is None else D0.copy()
+    labels=__import__('paper_scsc.data',fromlist=['sample_anchors']).sample_anchors(items,per_class,seed,filter_size=f)
+    W=np.zeros((3,K),DT);b=np.zeros(3,DT);Z=np.zeros((len(x),K,*x.shape[-2:]),DT)
+    rows=[];ts=time.time()
+    # Pre-fit a valid classifier on LABEL-FREE codes before the first outer.
+    # This is only an initialization of theta in Algorithm 2 (not a changed
+    # objective). Without it the first supervised coding step has W=0.
+    bootstrap={'enabled':bool(bootstrap_classifier and gamma>0)}
+    if bootstrap_classifier and gamma>0:
+        z0,d0=solve_z(D,x,np.zeros_like(W),b,None,0,beta,maxiter=admm_max,tol=tol)
+        W,b,c0=fit_cls(z0,labels,W,b,alpha,maxiter=cls_max)
+        bootstrap.update({'coding':d0,'classifier':c0})
+        del z0
+    for o in range(outer):
+        Wcode=W if gamma>0 else np.zeros_like(W)
+        Z,diag_z=solve_z(D,x,Wcode,b,labels,gamma,beta,maxiter=admm_max,tol=tol,zinit=Z)
+        D,diag_d=solve_d(x,Z,D,maxiter=admm_max,tol=tol)
+        W,b,diag_c=fit_cls(Z,labels,W,b,alpha,maxiter=cls_max)
+        obj=objective(x,Z,D,W,b,labels,beta,gamma,alpha)
+        rows.append({'outer':o+1,'loss':obj,'z_admm':diag_z,'d_admm':diag_d,'classifier':diag_c,'elapsed_s':round(time.time()-ts,2),
+         'filter_norms':np.linalg.norm(D.reshape(K,-1),axis=1).tolist()})
+        if snapshot_hook is not None: snapshot_hook(o+1,D.copy(),W.copy(),b.copy())
+    return {'D':D,'W':W,'b':b,'train_log':rows,'seconds':time.time()-ts,'labels_count':int(np.count_nonzero(labels)),'bootstrap':bootstrap}
