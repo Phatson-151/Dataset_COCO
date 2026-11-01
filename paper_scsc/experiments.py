@@ -70,6 +70,11 @@ def _train(cfg):
         if existing!=cfg:raise ValueError(f'Configuration collision: {key}')
         return json.loads((path/'completed.json').read_text())
     jwrite(path/'config.json',cfg)
+    jwrite(path/'software.json',dict(source_commit=subprocess.check_output(
+        ['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+        file_sha256={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
+            for name in ['paper_scsc/solver.py','paper_scsc/experiments.py','paper_scsc/data.py','native_final.py']},
+        note='Fourier products reuse current frequency iterates; equation-equivalent FFT optimization.'))
     start=time.time();X,Y,bank,profile=bank_for(cfg)
     jwrite(path/'training_bank.json',{'images':profile,'tiles':[
         {k:v for k,v in p.items() if k not in ('x','labels')} for p in bank],

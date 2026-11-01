@@ -170,7 +170,7 @@ def tables(selection):
         r=load(path);c=r['config'];m=r['aggregate'];t=load(OUT/'checkpoints'/r['id']/'completed.json')
         h=load(OUT/'checkpoints'/r['id']/'history.json')
         curve.append(dict(id=r['id'],K=c['K'],gamma=c['gamma'],N=c['N'],macro_AP=m['macro_AP_foreground'],PSNR_db=m['PSNR_db_mean_image'],**{f'{n}_AP':m['pooled_pixel_AP'][n] for n in NAMES},**{f'{n}_PSNR_db':m['class_PSNR_db_mean_image'][n] for n in NAMES}))
-        convrows.append(dict(id=r['id'],seconds=t['seconds'],peak_rss_MiB=t['peak_rss_MiB'],Z_converged=t['z_converged'],D_converged=t['d_converged'],subproblems=t['total_subproblems'],fresh_encoding_converged=t['fresh_encoding']['converged'],fresh_classifier_success=t['fresh_classifier']['success']))
+        convrows.append(dict(id=r['id'],seconds=t['seconds'],peak_rss_MiB=t['peak_rss_MiB'],Z_converged=t['z_converged'],D_converged=t['d_converged'],subproblems=t['total_subproblems'],ADMM_convergence_ratio=(t['z_converged']+t['d_converged'])/t['total_subproblems'],fresh_encoding_converged=t['fresh_encoding']['converged'],fresh_classifier_success=t['fresh_classifier']['success']))
         D=np.load(OUT/'checkpoints'/r['id']/'model.npz')['D'].reshape(c['K'],-1)
         dn=D/np.maximum(np.linalg.norm(D,axis=1,keepdims=True),1e-12);corr=np.abs(dn@dn.T);off=corr[~np.eye(c['K'],dtype=bool)]
         diversity.append(dict(id=r['id'],mean_absolute_filter_correlation=float(off.mean()),max_absolute_filter_correlation=float(off.max()),max_filter_norm=float(np.linalg.norm(D,axis=1).max())))
@@ -193,6 +193,9 @@ def tables(selection):
             save(fig,outdir('figures/confusion_matrices')/f'{arm}_{split}.png')
             csvwrite(outdir('tables/multiclass_metrics')/f'confusion_{arm}_{split}.csv',[
                 dict(GT=NAMES[y],**{NAMES[x]:int(cm[y,x]) for x in order}) for y in order])
+            norm=np.array(m['normalized_confusion'])
+            csvwrite(outdir('tables/multiclass_metrics')/f'normalized_confusion_{arm}_{split}.csv',[
+                dict(GT=NAMES[y],**{NAMES[x]:float(norm[y,x]) for x in order}) for y in order])
         csvwrite(outdir('tables/multiclass_metrics')/f'metrics_{split}.csv',selected)
     rows=[];pair=selection['paired_models']
     for cfg in pair:

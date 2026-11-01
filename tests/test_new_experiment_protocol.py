@@ -61,6 +61,7 @@ class NewReleaseArtifactTests(unittest.TestCase):
             h=json.loads((p.parent/'history.json').read_text())
             self.assertEqual(len(h),10)
             for row in h:
+                self.assertLessEqual(row['after_d']['total'],row['after_z']['total']+1e-3)
                 for name in ['z_admm','d_admm']:
                     diag=row[name];last=diag['residuals'][-1]
                     if diag['converged']:

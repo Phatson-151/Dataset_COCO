@@ -64,6 +64,29 @@ class NumericalSolverTests(unittest.TestCase):
         c,_=solve_z(d,altered,*args,M_override=mask,maxiter=200)
         np.testing.assert_allclose(a,c,atol=1e-6)
 
+    def test_high_K_supervised_objective_against_epigraph_optimizer(self):
+        # Independent smooth bounded formulation z=u-v, u,v>=0 exercises the
+        # low-rank multi-head Woodbury path, not just the one-filter case.
+        from scipy.special import expit
+        rng=np.random.default_rng(61);K=12
+        d=rng.uniform(-1,1,K);w=rng.normal(size=(4,K))*.3
+        b=np.array([.1,-.2,.05,-.1]);y=np.array([1,-1,1,-1]);beta=.05;gamma=.3
+        def oracle(t):
+            z=t[:K]-t[K:];logits=w@z+b
+            value=.5*(d@z-.4)**2+beta*t.sum()+gamma*np.logaddexp(0,-y*logits).sum()
+            grad=d*(d@z-.4)+gamma*w.T@(-y*expit(-y*logits))
+            return value,np.r_[grad+beta,-grad+beta]
+        ref=minimize(oracle,np.zeros(2*K),jac=True,method='L-BFGS-B',
+            bounds=[(0,None)]*(2*K),options={'maxiter':3000,'ftol':1e-13,'gtol':1e-9})
+        self.assertTrue(ref.success)
+        labels=np.broadcast_to(y[None,:,None,None],(1,4,4,4)).astype('int8')
+        z,diag=solve_z(d[:,None,None].astype('float32'),np.full((1,4,4),.4,'float32'),
+            w.astype('float32'),b.astype('float32'),labels,gamma,beta,maxiter=3000,tol=1e-4,adaptive=True)
+        zz=z[0,:,0,0]
+        got=.5*(d@zz-.4)**2+beta*abs(zz).sum()+gamma*np.logaddexp(0,-y*(w@zz+b)).sum()
+        self.assertTrue(diag['converged'])
+        self.assertLess(abs(got-ref.fun),.003)
+
     def test_global_dictionary_update_decreases_data_term(self):
         rng=np.random.default_rng(3)
         x=rng.normal(size=(3,16,16)).astype('float32')*.1

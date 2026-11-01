@@ -94,7 +94,9 @@ def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M
             base=np.einsum('kl,nlhw->nkhw',B,rhs,optimize=True) if C else rhs
         zf=base-Bd[None]*(np.sum(Df[None]*base,axis=1)/denom)[...,None,:,:]
         z=back(zf,shape)
-        q0=conv(Df,z);q2=np.einsum('ck,nkhw->nchw',W,z,optimize=True)
+        # zf is already available: do not FFT all N*K spatial maps again.
+        q0=back(np.sum(Df[None]*zf,axis=1),shape)
+        q2=np.einsum('ck,nkhw->nchw',W,z,optimize=True)
         old0=u0;old1=u1;old2=u2
         a0=q0+lam0
         u0=(M0*x+rho*a0)/(M0+rho)
@@ -176,7 +178,7 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
         else:
             dhat=np.einsum('hwkl,lhw->khw',Ainv,rhs,optimize=True)
         d=back(dhat,sh)
-        q0=back(np.sum(four(d)[None]*Zf,axis=1),sh)
+        q0=back(np.sum(dhat[None]*Zf,axis=1),sh)
         old0=v0;old1=v1
         v0=(M*x+rho*(q0+lam0))/(M+rho)
         v1=proj(d+lam1,f)

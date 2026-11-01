@@ -8,7 +8,7 @@ class ReleaseArtifactTests(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
   cls.out=ROOT/'final output'
-  if not (cls.out/'FINAL_METRICS.json').exists():raise unittest.SkipTest('End-to-end training/evaluation is still running')
+  if not (cls.out/'FINAL_METRICS.json').exists():raise unittest.SkipTest('Legacy artifact schema absent; new release checks are in test_new_experiment_protocol.NewReleaseArtifactTests')
   cls.report=json.loads((cls.out/'FINAL_METRICS.json').read_text())
  def test_ten_outer_each_candidate(self):
   for K in self.report['protocol']['args']['filters']:

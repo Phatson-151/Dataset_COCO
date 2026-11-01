@@ -39,6 +39,16 @@ a claim that SPORCO itself implements supervised CSC.
   its reported residuals, not exact full-frame dictionary learning. Full-frame
   pilot timings are documented separately. Nonconvex outer optimization has no
   asserted global-optimality guarantee and is fixed at 10 iterations.
+- Sparse codes warm-start from the previous outer iterate and dictionary ADMM
+  starts from the current feasible D. Scaled duals are reset between subproblems,
+  rather than retained across all outer iterations; this affects efficiency and
+  tolerance-limited iterates, not the convex subproblem's objective. Within an
+  ADMM solve, adaptive-rho changes rescale duals to preserve unscaled multipliers.
+- D-step acceptance additionally checks reconstruction descent of the actually
+  returned feasible compact dictionary. A small full-domain d-v1 residual can
+  amplify through large sparse codes; residual success alone may not protect the
+  feasible dictionary's data objective. Rejected candidates remain failures and
+  return the previous feasible D; the original and candidate costs are logged.
 - Inference covers every native-resolution pixel with reflect-padded,
   overlapping tiles and uses only valid convolution interiors; no resizing,
   GT masking, smoothing, logit-offset tuning or TEST threshold selection.
