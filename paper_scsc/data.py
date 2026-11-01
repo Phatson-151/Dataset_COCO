@@ -49,6 +49,23 @@ def compressed_rle_counts(s):
     return counts
 
 def mask_of(a, h, w):
+    # COCO's own rasterizer is required: rounding polygon vertices and fillPoly
+    # changes boundary pixels and consequently all pixel-level metrics.
+    from pycocotools import mask as coco_mask
+    seg=a.get('segmentation', [])
+    if isinstance(seg,list):
+        if not seg:return np.zeros((h,w),np.uint8)
+        rle=coco_mask.merge(coco_mask.frPyObjects(seg,h,w))
+    elif isinstance(seg,dict):
+        rle=coco_mask.frPyObjects(seg,h,w) if isinstance(seg['counts'],list) else dict(seg)
+        if isinstance(rle['counts'],str):rle['counts']=rle['counts'].encode('ascii')
+    else:raise TypeError('Unsupported COCO segmentation')
+    mask=coco_mask.decode(rle)
+    if mask.shape!=(h,w):raise ValueError('COCO mask shape mismatch; resizing prohibited')
+    return mask
+
+def legacy_mask_of(a, h, w):
+    """Retained for audit only; experiments use the official COCO rasterizer."""
     seg=a.get('segmentation',[])
     if isinstance(seg,list):
         mask=np.zeros((h,w),np.uint8)
