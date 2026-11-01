@@ -2,6 +2,7 @@
 import os
 os.environ['MPLBACKEND']='Agg'
 os.environ.setdefault('MPLCONFIGDIR','/workspace/.cache/matplotlib')
+os.environ.setdefault('XDG_CACHE_HOME','/workspace/.cache')
 import csv
 import hashlib
 import json
