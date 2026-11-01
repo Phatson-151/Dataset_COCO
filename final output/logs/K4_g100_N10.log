@@ -1,0 +1,36 @@
+K4_g100_N10 bootstrap Z=True(90) t=4.9s
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/Dataset_COCO/paper_scsc/experiments.py", line 275, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/Dataset_COCO/paper_scsc/experiments.py", line 270, in main
+    if a.action=='train':train(cfg)
+                         ^^^^^^^^^^
+  File "/workspace/Dataset_COCO/paper_scsc/experiments.py", line 62, in train
+    return _train(cfg)
+           ^^^^^^^^^^^
+  File "/workspace/Dataset_COCO/paper_scsc/experiments.py", line 95, in _train
+    Z,zd=solve_z(D,X,W if cfg['gamma'] else W*0,b,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Dataset_COCO/paper_scsc/solver.py", line 133, in solve_z
+    u2[mask]=logistic_prox(a,yy,bb,gamma,rho)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/Dataset_COCO/paper_scsc/solver.py", line 47, in logistic_prox
+    raise FloatingPointError('Logistic proximal stationarity failed')
+FloatingPointError: Logistic proximal stationarity failed
+K4_g100_N10 bootstrap Z=True(90) t=3.7s
+K4_g100_N10 outer 1/10 Z=True(290) D=True(460) obj=5168.8760 t=29.2s
+K4_g100_N10 outer 2/10 Z=True(210) D=True(240) obj=3807.0938 t=45.8s
+K4_g100_N10 outer 3/10 Z=True(220) D=True(200) obj=3216.3718 t=62.0s
+K4_g100_N10 outer 4/10 Z=True(190) D=True(220) obj=2950.0591 t=75.1s
+K4_g100_N10 outer 5/10 Z=True(160) D=True(210) obj=2825.7646 t=88.3s
+K4_g100_N10 outer 6/10 Z=True(140) D=True(130) obj=2765.8699 t=97.3s
+K4_g100_N10 outer 7/10 Z=True(120) D=True(160) obj=2736.0234 t=106.1s
+K4_g100_N10 outer 8/10 Z=True(110) D=True(120) obj=2720.2378 t=115.6s
+K4_g100_N10 outer 9/10 Z=True(100) D=True(150) obj=2708.2964 t=123.1s
+K4_g100_N10 outer 10/10 Z=True(110) D=True(170) obj=2700.5903 t=131.5s
+K4_g100_N10 val 446651 AP=0.1758 mIoU=0.0576 PSNR=38.52 encoding=10/10
+K4_g100_N10 val 230008 AP=0.1380 mIoU=0.0941 PSNR=36.59 encoding=8/8
+K4_g100_N10 val 68093 AP=0.1859 mIoU=0.1129 PSNR=37.21 encoding=11/11
