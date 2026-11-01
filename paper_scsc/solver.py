@@ -35,13 +35,17 @@ def logistic_prox(a,y,b,gamma,rho):
     b=np.asarray(b,dtype=np.float64)
     other=a+gamma*y/rho;lo=np.minimum(a,other);hi=np.maximum(a,other)
     v=a.copy()
-    for _ in range(80):
+    for _ in range(120):
         s=expit(-y*(v+b));g=rho*(v-a)-gamma*y*s
         done=np.abs(g)<1e-10
         if np.all(done):break
         lo=np.where(g<0,v,lo);hi=np.where(g>0,v,hi)
         candidate=v-g/(rho+gamma*s*(1-s))
-        v=np.where(done,v,np.where((candidate>lo)&(candidate<hi),candidate,(lo+hi)*.5))
+        trial=rho*(candidate-a)-gamma*y*expit(-y*(candidate+b))
+        # Merely lying inside the bracket is insufficient: Newton can bounce
+        # extremely close to opposite ends without shrinking it meaningfully.
+        accept=(candidate>lo)&(candidate<hi)&(np.abs(trial)<=.5*np.abs(g))
+        v=np.where(done,v,np.where(accept,candidate,(lo+hi)*.5))
     residual=rho*(v-a)-gamma*y*expit(-y*(v+b))
     if np.max(np.abs(residual),initial=0.)>1e-8:
         raise FloatingPointError('Logistic proximal stationarity failed')

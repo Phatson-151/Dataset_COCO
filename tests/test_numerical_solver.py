@@ -12,6 +12,9 @@ class NumericalSolverTests(unittest.TestCase):
         # Undamped Newton oscillates near +/-8; the exact root is zero.
         a=np.array([-8.,8.]);y=np.array([1.,-1.])
         np.testing.assert_allclose(logistic_prox(a,y,0.,1.,1/16),0.,atol=1e-9)
+        # A bracket alone can still cycle near its opposite endpoints.
+        actual=logistic_prox([2.6732749938964844],[-1.],[-.00028616152121685445],100.,1.)
+        np.testing.assert_allclose(actual,[-2.840851015293945],atol=1e-9)
 
     def test_logistic_prox_against_bracketed_scalar_oracle(self):
         from scipy.optimize import brentq
