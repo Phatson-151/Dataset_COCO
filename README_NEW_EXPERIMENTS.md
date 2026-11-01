@@ -20,6 +20,9 @@ python -m unittest discover -s tests -v
 python run_paper_experiments.py
 python generate_paper_outputs.py
 python verify_final.py
+python write_final_report.py
+python verify_final.py
+python package_final.py
 ```
 
 The sweep runner reuses **only completed checkpoints from its own new run**.

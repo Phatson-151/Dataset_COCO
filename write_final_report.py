@@ -104,7 +104,23 @@ def main():
         lines+=['','## Additional ADMM diagnostic','',
             f'ทดสอบ first alternating step ของ K=4, gamma=1 ซ้ำโดยเพิ่มเพดานเป็น 5,000 และคง atol/rtol เดิม: Z converged={d["Z"]["converged"]} ใน {d["Z"]["iterations"]} iterations; D converged={d["D"]["converged"]} ใน {d["D"]["iterations"]} iterations. Status={d["status"]}. เป็น numerical diagnostic เท่านั้น ไม่ใช่โมเดลที่ฝึก 10 outer iterations และไม่ได้แทนค่าหรือลบ failures ใน primary sweep', '',
             'สาเหตุที่แยกตรวจ: บาง Z-step เมื่อ gamma สูงต้องปรับ sparse codes จาก initialization มากจนเพดานเดิมไม่พอ; บาง D-step dual residual ยังสูงกว่า tolerance เล็กน้อย และบาง D-step ผ่าน residual แต่ feasible dictionary objective แย่ลงจึงถูก descent guard ปฏิเสธ ต้องแยกกรณีเหล่านี้จากการรันผิดหรือคำนวณ NaN']
-    lines+=['','Implementation provenance: ระหว่างพัฒนาได้ลด redundant FFT โดย reuse zf/dhat ตามสมการเดิม คง objective และ stopping criteria เดิม มี independent scalar/high-K epigraph optimizer tests รองรับ โมเดล K=100 ที่เริ่มก่อน optimization ใช้รุ่น FFT เดิมต่อจนจบ; ไม่เรียกผลจาก profiler ว่าเป็น training result ดู profiling_summary.json และ software metadata โดยไม่อ้าง bitwise identity ระหว่าง implementation revisions']
+    recovery=OUT/'logs/recovered_implementation_failures.json'
+    if recovery.exists():
+        lines+=['','## Solver failure recovery and reruns','',
+            'การทดลอง SCSC รุ่นแรกของงานนี้ถูกเก็บไว้ใน failed_attempts/prox_v1 และไม่ใช้เลือกโมเดลหรือเป็นผล final สาเหตุคือ undamped Newton logistic prox สามารถแกว่งเป็นสองจุด เช่น a=−8, gamma=1, rho=1/16 ทั้งที่รากจริงเป็นศูนย์ เพิ่มเพดาน ADMM เป็น 5,000 ก็ไม่แก้ การแก้ใช้ monotone root bracket พร้อมรับ Newton step เฉพาะเมื่อ residual ลดอย่างน้อยครึ่งหนึ่ง มิฉะนั้น bisection และตรวจ stationarity ทุกครั้ง', '',
+            'K=100 SCSC รุ่นแรกเกิด overflow ใน D-step จาก Gram/Woodbury cancellation แบบ float32 การเปลี่ยน Gram เป็น float64 อย่างเดียวยังไม่ผ่าน high-coherence regression จึงใช้ complex128 spectral linear solve จาก SVD ของ Z โดยตรง ซึ่งคง identity และ nullspace ได้เสถียรกว่า มี numerical regression เทียบ Brent root oracle, independent epigraph optimizer และกรณี Gram ill-conditioned รองรับ SCSC ทุกรุ่นที่ใช้เป็นผล primary ถูกฝึกใหม่หลังแก้ ไม่ใช้ผลรุ่นที่ผิดมาสรุปว่า paper สำเร็จ', '',
+            'Baseline gamma=0 ที่เก็บไว้ไม่มี logistic prox และผ่าน finite-state/residual/feasible-descent checks; ใช้สมการและ tolerance เดียวกัน แต่บาง baseline รันก่อน precision/FFT refactor จึงไม่ได้อ้าง bitwise-identical execution ระหว่าง implementation revisions รายละเอียด source hashing ของงานใหม่อยู่ software.json ส่วน early baseline ไม่มี per-job source hash ที่เก็บทัน จึงเป็นข้อจำกัด provenance ที่ระบุไว้ตรงนี้']
+        old=OUT/'failed_attempts/prox_v1/ADMM_extended_ceiling_diagnostic.json'
+        new=OUT/'checkpoints/K4_g1_N10/history.json'
+        if old.exists() and new.exists():
+            previous=read(old);current=read(new)[0]
+            comparison=dict(previous_undamped=dict(maxiter=5000,Z_converged=previous['Z']['converged'],Z_iterations=previous['Z']['iterations']),
+                corrected=dict(maxiter=1000,Z_converged=current['z_admm']['converged'],Z_iterations=current['z_admm']['iterations'],D_converged=current['d_admm']['converged'],D_iterations=current['d_admm']['iterations']),
+                note='Same K4 gamma1 N10 first alternating step; primary corrected model still has all ten outer iterations separately logged')
+            jwrite(OUT/'metrics/ADMM_solver_fix_comparison.json',comparison)
+            lines+=['',f'เปรียบเทียบ K=4, gamma=1 first alternating step: รุ่นเดิม maxiter=5000 Z-converged={previous["Z"]["converged"]}; รุ่นแก้ maxiter=1000 Z-converged={current["z_admm"]["converged"]} ใน {current["z_admm"]["iterations"]} ขั้น ไม่ย้ายผล diagnostic มาแทนผลฝึก 10 outer iterations']
+        record=read(recovery);record['status']='corrected_primary_sweep_completed_and_artifacts_verified';jwrite(recovery,record)
+    lines+=['','Implementation provenance: ระหว่างพัฒนาได้ลด redundant FFT โดย reuse zf/dhat ตามสมการเดิม คง objective และ stopping criteria เดิม มี independent scalar/high-K epigraph optimizer tests รองรับ เฉพาะ baseline CSC K=100 ที่เริ่มก่อน optimization ใช้รุ่น FFT เดิมต่อจนจบ ส่วน SCSC รุ่นผิดถูกเก็บเป็น failure evidence และฝึกใหม่; ไม่เรียกผลจาก profiler ว่าเป็น training result ดู profiling_summary.json และ software metadata โดยไม่อ้าง bitwise identity ระหว่าง implementation revisions']
     (OUT/'FINAL_REPORT_TH.md').write_text('\n'.join(lines)+'\n')
     (OUT/'PROJECT_STATUS_TH.md').write_text('# สถานะผลใหม่\n\nอ่าน FINAL_REPORT_TH.md และ verification.json\n\n'
         f'Artifact consistency: ผ่าน; primary ADMM ไม่ converge {len(v["nonconverged_primary_subproblems"])} รายการ; '

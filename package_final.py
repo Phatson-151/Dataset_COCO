@@ -33,7 +33,7 @@ def main():
     for folder in [ROOT/'references',ROOT/'data',OUT]:
         for path in sorted(folder.rglob('*')):
             if not path.is_file() or path.suffix=='.lock' or 'pilot' in path.parts or '__pycache__' in path.parts:continue
-            if 'failed_attempts' in path.parts and path.suffix=='.npz':continue
+            if 'failed_attempts' in path.parts and path.suffix not in ['.json','.log','.md','.txt']:continue
             entries[str(path.relative_to(ROOT))]=path
     manifest={name:dict(bytes=p.stat().st_size,sha256=sha(p)) for name,p in entries.items()}
     with zipfile.ZipFile(archive,'w',allowZip64=True) as z:

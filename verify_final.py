@@ -27,6 +27,8 @@ def main():
         r=read(p);h=read(p.parent/'history.json');cfg=read(p.parent/'config.json')
         assert len(h)==cfg['outer']==10
         assert len(list(p.parent.glob('outer_*.npz')))==10
+        if cfg['gamma']>0:
+            assert (p.parent/'software.json').exists(), 'Supervised model lacks corrected-solver provenance'
         model_count+=1
         for row in h:
             for step in ['z_admm','d_admm']:
@@ -123,7 +125,8 @@ def main():
         source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
     jwrite(OUT/'verification.json',report)
     inventory={str(p.relative_to(ROOT)):digest(p) for p in sorted(OUT.rglob('*'))
-        if p.is_file() and p.name!='SHA256SUMS.json' and p.suffix!='.lock' and 'pilot' not in p.parts}
+        if p.is_file() and p.name!='SHA256SUMS.json' and p.suffix!='.lock' and 'pilot' not in p.parts
+        and ('failed_attempts' not in p.parts or p.suffix in ['.json','.log','.md','.txt'])}
     jwrite(OUT/'SHA256SUMS.json',inventory)
     print(json.dumps({k:v for k,v in report.items() if k!='nonconverged_primary_subproblems'},indent=2))
 

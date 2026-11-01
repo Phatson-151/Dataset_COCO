@@ -47,7 +47,7 @@ def logistic_prox(a,y,b,gamma,rho):
         accept=(candidate>lo)&(candidate<hi)&(np.abs(trial)<=.5*np.abs(g))
         v=np.where(done,v,np.where(accept,candidate,(lo+hi)*.5))
     residual=rho*(v-a)-gamma*y*expit(-y*(v+b))
-    if np.max(np.abs(residual),initial=0.)>1e-8:
+    if not np.isfinite(residual).all() or np.max(np.abs(residual),initial=0.)>1e-8:
         raise FloatingPointError('Logistic proximal stationarity failed')
     return v
 def proj(D,f):
