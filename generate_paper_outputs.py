@@ -28,7 +28,11 @@ def csvwrite(path,rows):
     with Path(path).open('w',newline='') as f:
         w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
 def key(cfg):return tag(cfg['K'],cfg['gamma'],cfg['N'])
-def result(cfg,split='val'):return load(OUT/'metrics'/f'{key(cfg)}_{split}.json')
+def result(cfg,split='val'):
+    r=load(OUT/'metrics'/f'{key(cfg)}_{split}.json')
+    r['aggregate']['macro_AP_all_classes']=float(np.mean([
+        v for v in r['aggregate']['pooled_pixel_AP'].values() if v is not None]))
+    return r
 def ap(cfg,name=None):
     m=result(cfg)['aggregate'];return m['macro_AP_foreground'] if name is None else m['pooled_pixel_AP'][name]
 def psnr(cfg,name=None):
@@ -162,6 +166,7 @@ def tables(selection):
         m=result(cfg)['aggregate'];row=dict(id=key(cfg),gamma=cfg['gamma'],split='VAL')
         row.update({f'{n}_AP':m['pooled_pixel_AP'][n] for n in NAMES})
         row['foreground_macro_AP']=m['macro_AP_foreground'];row['global_PSNR_db']=m['PSNR_db_mean_image']
+        row['all_class_macro_AP']=m['macro_AP_all_classes']
         row.update({f'{n}_PSNR_db':m['class_PSNR_db_mean_image'][n] for n in NAMES})
         rows.append(row)
     csvwrite(folder/'table1_VAL.csv',rows)
@@ -173,7 +178,9 @@ def tables(selection):
         r=load(path);c=r['config'];m=r['aggregate'];t=load(OUT/'checkpoints'/r['id']/'completed.json')
         h=load(OUT/'checkpoints'/r['id']/'history.json')
         curve.append(dict(id=r['id'],K=c['K'],gamma=c['gamma'],N=c['N'],macro_AP=m['macro_AP_foreground'],PSNR_db=m['PSNR_db_mean_image'],**{f'{n}_AP':m['pooled_pixel_AP'][n] for n in NAMES},**{f'{n}_PSNR_db':m['class_PSNR_db_mean_image'][n] for n in NAMES}))
-        convrows.append(dict(id=r['id'],seconds=t['seconds'],peak_rss_MiB=t['peak_rss_MiB'],Z_converged=t['z_converged'],D_converged=t['d_converged'],subproblems=t['total_subproblems'],ADMM_convergence_ratio=(t['z_converged']+t['d_converged'])/t['total_subproblems'],fresh_encoding_converged=t['fresh_encoding']['converged'],fresh_classifier_success=t['fresh_classifier']['success']))
+        val_batches=sum(v['encode']['batch_count'] for v in r['per_image'])
+        val_success=sum(v['encode']['converged_batches'] for v in r['per_image'])
+        convrows.append(dict(id=r['id'],seconds=t['seconds'],peak_rss_MiB=t['peak_rss_MiB'],Z_converged=t['z_converged'],D_converged=t['d_converged'],subproblems=t['total_subproblems'],ADMM_convergence_ratio=(t['z_converged']+t['d_converged'])/t['total_subproblems'],training_classifier_successes=sum(v['classifier']['success'] for v in h),fresh_encoding_converged=t['fresh_encoding']['converged'],fresh_classifier_success=t['fresh_classifier']['success'],VAL_encoding_converged_batches=val_success,VAL_encoding_batches=val_batches,VAL_encoding_convergence_ratio=val_success/max(val_batches,1)))
         D=np.load(OUT/'checkpoints'/r['id']/'model.npz')['D'].reshape(c['K'],-1)
         dn=D/np.maximum(np.linalg.norm(D,axis=1,keepdims=True),1e-12);corr=np.abs(dn@dn.T);off=corr[~np.eye(c['K'],dtype=bool)]
         diversity.append(dict(id=r['id'],mean_absolute_filter_correlation=float(off.mean()),max_absolute_filter_correlation=float(off.max()),max_filter_norm=float(np.linalg.norm(D,axis=1).max())))
@@ -277,7 +284,7 @@ def additional_metrics(selection):
         ax_iou.bar(np.arange(6)+offset,values,width=.36,label=arm)
         row=dict(arm=arm,gamma=cfg['gamma'],K=cfg['K'],split='TEST_PREVIOUSLY_SEEN',
             **{f'{n}_AP':m['pooled_pixel_AP'][n] for n in NAMES},
-            foreground_macro_AP=m['macro_AP_foreground'],global_PSNR_db=m['PSNR_db_mean_image'],
+            foreground_macro_AP=m['macro_AP_foreground'],all_class_macro_AP=m['macro_AP_all_classes'],global_PSNR_db=m['PSNR_db_mean_image'],
             **{f'{n}_PSNR_db':m['class_PSNR_db_mean_image'][n] for n in NAMES})
         table.append(row)
     for ax in axs.flat:ax.set_xlabel('Recall');ax.set_ylabel('Precision');ax.set_xlim(0,1);ax.set_ylim(0,1);ax.legend();ax.grid(alpha=.25)

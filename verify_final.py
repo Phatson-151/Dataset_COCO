@@ -9,7 +9,7 @@ from scipy.special import expit
 from sklearn.metrics import average_precision_score
 from native_final import native_image,jwrite,NAMES
 from paper_scsc.data import ROOT,manifest
-from paper_scsc.experiments import OUT,tag
+from paper_scsc.experiments import OUT,tag,source_revision
 
 
 def read(p):return json.loads(Path(p).read_text())
@@ -23,6 +23,7 @@ def close(a,b):np.testing.assert_allclose(a,b,rtol=1e-6,atol=1e-7)
 
 def main():
     selection=read(OUT/'experiment_configs/selection.json');nonconverged=[];model_count=0
+    auxiliary_failures=[];classifier_failures=[];inference_failures=[]
     for p in sorted((OUT/'checkpoints').glob('*/completed.json')):
         r=read(p);h=read(p.parent/'history.json');cfg=read(p.parent/'config.json')
         assert len(h)==cfg['outer']==10
@@ -30,7 +31,12 @@ def main():
         if cfg['gamma']>0:
             assert (p.parent/'software.json').exists(), 'Supervised model lacks corrected-solver provenance'
         model_count+=1
+        for name in ['bootstrap_encoding','fresh_encoding']:
+            if not r[name]['converged']:auxiliary_failures.append(dict(id=p.parent.name,stage=name))
+        for name in ['bootstrap_classifier','fresh_classifier']:
+            if not r[name]['success']:classifier_failures.append(dict(id=p.parent.name,stage=name))
         for row in h:
+            if not row['classifier']['success']:classifier_failures.append(dict(id=p.parent.name,stage='training_classifier',outer=row['outer']))
             for step in ['z_admm','d_admm']:
                 d=row[step];last=d['residuals'][-1]
                 assert all(np.isfinite(last[f]) for f in ['primal_residual','dual_residual','primal_tolerance','dual_tolerance'])
@@ -52,9 +58,10 @@ def main():
     native_checked=0
     for split in ['train','val','test_sealed']:
         for e in manifest()[split]:native_image(e);native_checked+=1
-    predictions=0;inpainted=0
-    for k in ids:
-        for split in ['val','test_sealed']:
+    predictions=0;selected_predictions=0;inpainted=0
+    all_ids=[p.parent.name for p in sorted((OUT/'checkpoints').glob('*/completed.json'))]
+    for k in all_ids:
+        for split in (['val','test_sealed'] if k in ids else ['val']):
             metric=read(OUT/'metrics'/f'{k}_{split}.json')
             total=np.zeros((4,4),dtype='int64');all_y=[];all_s=[];psnrs=[]
             for e in manifest()[split]:
@@ -67,10 +74,13 @@ def main():
                 valid=~im['ignore'];y=im['gt'].argmax(0)[valid];p=pred[valid]
                 cm=np.bincount(y*4+p,minlength=16).reshape(4,4);total+=cm
                 row=next(r for r in metric['per_image'] if r['image_id']==im['id'])
+                for batch_index,batch in enumerate(row['encode']['batches']):
+                    if not batch['converged']:inference_failures.append(dict(id=k,split=split,image_id=im['id'],batch=batch_index,iterations=batch['iterations']))
                 np.testing.assert_array_equal(cm,row['confusion_gt_rows_pred_cols'])
                 psnr=float(-10*np.log10(max(float(np.mean((im['x']+im['low']-a['reconstruction'])**2)),1e-12)))
                 close(psnr,row['PSNR_db']);psnrs.append(psnr)
                 all_y.append(y);all_s.append(logits[:,valid]);predictions+=1
+                selected_predictions+=int(k in ids)
             m=metric['aggregate'];np.testing.assert_array_equal(total,m['confusion_gt_rows_pred_cols'])
             close(np.mean(psnrs),m['PSNR_db_mean_image'])
             y=np.concatenate(all_y);s=np.concatenate(all_s,axis=1)
@@ -78,6 +88,7 @@ def main():
                 close(average_precision_score(y==c,s[c]),m['pooled_pixel_AP'][name])
                 iou=total[c,c]/(total[c].sum()+total[:,c].sum()-total[c,c])
                 close(iou,m['per_class'][name]['iou'])
+    for k in ids:
         inp=read(OUT/'metrics'/f'{k}_inpainting.json')
         for e in manifest()['test_sealed']:
             im=native_image(e);original=im['x']+im['low']
@@ -88,6 +99,8 @@ def main():
             assert np.count_nonzero(~observed)==observed.size//2
             np.testing.assert_array_equal(a['masked'],np.where(observed,original,0))
             row=next(r for r in inp['per_image'] if r['image_id']==im['id'])
+            for batch_index,batch in enumerate(row['encode']['batches']):
+                if not batch['converged']:inference_failures.append(dict(id=k,split='inpainting',image_id=im['id'],batch=batch_index,iterations=batch['iterations']))
             assert hashlib.sha256(observed.tobytes()).hexdigest()==row['observed_mask_sha256']
             for f,mask in [('PSNR_all_db',np.ones_like(observed)),('PSNR_missing_db',~observed)]:
                 value=-10*np.log10(max(float(np.mean((original[mask]-a['reconstruction'][mask])**2)),1e-12))
@@ -101,6 +114,16 @@ def main():
     required=['figures/figure3_dictionaries','figures/figure4_multiclass','figures/figure5_ap_psnr',
         'figures/figure6_class_psnr','tables/table1_gamma_ap_psnr','tables/table2_inpainting']
     for name in required:assert (OUT/name).is_dir() and any((OUT/name).iterdir())
+    for e in manifest()['test_sealed']:
+        image_id=e['image_id'];folder=OUT/'figures/figure4_multiclass'
+        for name in NAMES:assert (folder/f'figure4_{name}_{image_id}.png').is_file()
+        for prefix in ['figure4_all_classes','binary_predictions','multiclass']:
+            assert (folder/f'{prefix}_{image_id}.png').is_file()
+    for K in {c['K'] for c in selection['K_configs']}:
+        assert (OUT/f'figures/figure3_dictionaries/figure3_K{K}.png').is_file()
+    for name in ['macro',*NAMES]:
+        for suffix in ['',*['_'+c for c in 'abcdef']]:
+            assert (OUT/f'figures/figure5_ap_psnr/figure5_{name}{suffix}.png').is_file()
     for c in selection['gamma_configs']+selection['K_configs']+selection['N_configs']:
         k=tag(c['K'],c['gamma'],c['N']);assert (OUT/'metrics'/f'{k}_val.json').exists()
     status=read(OUT/'experiment_configs/experiment_status.json')
@@ -113,16 +136,20 @@ def main():
     jwrite(OUT/'experiment_configs/experiment_status.json',status)
     failed={k:v for k,v in status.items() if v['status']!='completed'}
     report=dict(artifact_consistency_passed=True,models_checked=model_count,
-        original_images_verified=native_checked,selected_native_predictions_recomputed=predictions,
+        original_images_verified=native_checked,native_predictions_recomputed=predictions,
+        selected_native_predictions_recomputed=selected_predictions,
         paired_inpaintings_verified=inpainted,PNG_files_verified=len(figures),
         nonconverged_primary_subproblems=nonconverged,failed_or_unrun_registered_experiments=failed,
-        all_primary_subproblems_converged=not nonconverged,
+        nonconverged_auxiliary_encodings=auxiliary_failures,unsuccessful_classifier_fits=classifier_failures,
+        nonconverged_inference_batches=inference_failures,
+        all_training_ZD_subproblems_converged=not nonconverged,
+        all_primary_subproblems_converged=not (nonconverged or auxiliary_failures or classifier_failures or inference_failures),
         independent_holdout_available=False,full_frame_training=False,training_seed_count=1,
         fully_verified_final=False,
         limitations=['TEST previously seen; no new independent holdout','N>=20 unavailable; 18 total images',
             'sampled grayscale native tiles, not full-frame RGB dictionary learning',
             'no other-dataset inpainting','single training seed'],
-        source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
+        source_commit=source_revision())
     jwrite(OUT/'verification.json',report)
     inventory={str(p.relative_to(ROOT)):digest(p) for p in sorted(OUT.rglob('*'))
         if p.is_file() and p.name!='SHA256SUMS.json' and p.suffix!='.lock' and 'pilot' not in p.parts

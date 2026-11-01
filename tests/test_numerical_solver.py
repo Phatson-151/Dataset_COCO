@@ -37,6 +37,18 @@ class NumericalSolverTests(unittest.TestCase):
         m=make_mask((8,8),3)
         self.assertLess(float(np.sum(m*(conv(kernel_fft(new,(8,8)),z)-x)**2)),float(np.sum(m*x*x))*.2)
 
+    def test_cache_chunks_preserve_global_admm_iterates_and_residuals(self):
+        rng=np.random.default_rng(77)
+        for gamma in [0,.2,100]:
+            x=rng.normal(size=(4,16,16)).astype('float32')*.1;d=init_dict(x,12,3)
+            w=rng.normal(size=(4,12)).astype('float32')*.2;b=np.zeros(4,'float32')
+            y=np.zeros((4,4,16,16),'int8');y[:,:,4,5]=1;y[:,:,8,9]=-1
+            args=(d,x,w,b,y,gamma,.015)
+            a,da=solve_z(*args,maxiter=30,adaptive=True,chunk_size=None)
+            c,dc=solve_z(*args,maxiter=30,adaptive=True,chunk_size=1)
+            np.testing.assert_array_equal(a,c)
+            self.assertEqual(da['residuals'],dc['residuals'])
+
     def test_linear_convolution_on_valid_support(self):
         rng = np.random.default_rng(9)
         d = rng.normal(size=(2, 5, 5)).astype('float32')

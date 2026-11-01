@@ -18,6 +18,7 @@ python -m pip install -r requirements-experiment-lock.txt
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MPLBACKEND=Agg
 python -m unittest discover -s tests -v
 python run_paper_experiments.py
+python monitor_outer_validation.py
 python generate_paper_outputs.py
 python verify_final.py
 python write_final_report.py

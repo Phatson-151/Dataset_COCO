@@ -1,6 +1,8 @@
 """Native inference, official annotations and stored-release consistency."""
 import json
 import unittest
+import tempfile
+from unittest.mock import patch
 from pathlib import Path
 import numpy as np
 from pycocotools import mask as coco_mask
@@ -34,6 +36,35 @@ class ExperimentProtocolTests(unittest.TestCase):
         self.assertAlmostEqual(m['per_class']['Car']['f1'],4/8)
         self.assertAlmostEqual(m['background_FPR'],2/6)
         self.assertAlmostEqual(m['pixel_accuracy'],11/16)
+
+    def test_parallel_inference_is_bitwise_identical_to_serial(self):
+        rng=np.random.default_rng(21);x=rng.normal(size=(90,107)).astype('float32')*.02
+        d=init_dict(x[None],2,5);w=rng.normal(size=(4,2)).astype('float32');b=np.zeros(4,'float32')
+        cfg=dict(BASE,tile=32,stride=20,eval_admm=100)
+        a,r,diag=infer(x,d,w,b,dict(cfg,eval_workers=1))
+        c,s,other=infer(x,d,w,b,dict(cfg,eval_workers=2))
+        np.testing.assert_array_equal(a,c);np.testing.assert_array_equal(r,s)
+        self.assertEqual(diag['batches'],other['batches'])
+
+    def test_interrupted_training_resumes_without_overwriting_checkpoint(self):
+        from paper_scsc import experiments as ex
+        cfg=dict(BASE,K=2,gamma=.2,N=1,tile=32,filter_size=5,points=4,outer=2,max_admm=40)
+        real_write=ex.jwrite
+        def interrupt_after_checkpoint(path,data):
+            real_write(path,data)
+            if Path(path).name=='history.json' and len(data)==1:
+                raise RuntimeError('simulated process interruption after persisted checkpoint')
+        with tempfile.TemporaryDirectory() as tmp,patch.object(ex,'OUT',Path(tmp)):
+            with patch.object(ex,'jwrite',interrupt_after_checkpoint):
+                with self.assertRaisesRegex(RuntimeError,'simulated process interruption'):ex.train(cfg)
+            folder=Path(tmp)/'checkpoints'/tag(2,.2,1)
+            checkpoint=(folder/'outer_01.npz').read_bytes()
+            result=ex.train(cfg)
+            self.assertEqual(checkpoint,(folder/'outer_01.npz').read_bytes())
+            self.assertEqual(len(json.loads((folder/'history.json').read_text())),2)
+            self.assertEqual(len(list(folder.glob('outer_*.npz'))),2)
+            self.assertTrue((folder/'resume_01.json').exists())
+            self.assertEqual(result['status'],'completed')
 
     def test_low_rank_high_K_dictionary_update_never_returns_worse_point(self):
         rng=np.random.default_rng(19);x=rng.normal(size=(1,16,16)).astype('float32')*.1

@@ -23,6 +23,7 @@ def main():
     entries={}
     source=['requirements.txt','requirements-experiment-lock.txt','PAPER_AUDIT.md','run_paper_experiments.py',
         'generate_paper_outputs.py','verify_final.py','write_final_report.py',
+        'monitor_outer_validation.py',
         'package_final.py','native_final.py','coco_scsc_manifest.json',
         'DATA_ATTRIBUTION.md','SCSC_COCO_MASTER_PROMPT_CODEX_CLOUD_REVISED.txt']
     for name in source:entries[name]=ROOT/name
@@ -41,6 +42,7 @@ def main():
             compress=zipfile.ZIP_STORED if path.suffix.lower() in ['.npz','.png','.jpg','.jpeg','.pdf'] else zipfile.ZIP_DEFLATED
             z.write(path,f'{top}/{name}',compress_type=compress,compresslevel=6 if compress==zipfile.ZIP_DEFLATED else None)
         z.writestr(f'{top}/RELEASE_MANIFEST.json',json.dumps(dict(files=manifest,
+            source_commit=verified['source_commit'],
             artifact_consistency_passed=True,fully_verified_final=False,
             caution='Previously-seen TEST, sampled native tiles, one seed; read FINAL_REPORT_TH.md'),indent=2),compress_type=zipfile.ZIP_DEFLATED)
     with zipfile.ZipFile(archive) as z:

@@ -89,7 +89,7 @@ def make_mask(hw,f):
     M[:edge,:]=0;M[:,:edge]=0
     return M
 
-def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M_override=None,adaptive=False):
+def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M_override=None,adaptive=False,chunk_size=1):
     """ADMM split u0=D*z, u1=z, u2=W*z; all exact proximal operators."""
     N,H,WW=x.shape;K=len(D);C=len(W);shape=(H,WW)
     # Eq. (3) needs only [D; I]. Zero-weight logistic constraints are redundant
@@ -108,34 +108,33 @@ def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M
     u0=conv(Df,z);u1=z.copy();u2=np.einsum('ck,nkhw->nchw',W,z,optimize=True)
     lam0=np.zeros_like(u0);lam1=np.zeros_like(z);lam2=np.zeros_like(u2)
     trace=[]; converged=False
+    q0=u0.copy();q2=u2.copy()
+    chunk_size=N if chunk_size is None else max(1,int(chunk_size))
     for it in range(maxiter):
-        # FFT solve of block linear system, using all channels and all examples.
-        R0=four(u0-lam0);R1=four(u1-lam1)
-        R2=four(u2-lam2)
-        rhs=np.conj(Df)[None]*R0[:,None]+R1+np.einsum('ck,nchw->nkhw',W,R2,optimize=True)
-        if E is not None:
-            projected=np.einsum('ck,nkhw->nchw',W,rhs,optimize=True)
-            base=rhs-np.einsum('kc,nchw->nkhw',E,projected,optimize=True)
-        else:
-            base=np.einsum('kl,nlhw->nkhw',B,rhs,optimize=True) if C else rhs
-        zf=base-Bd[None]*(np.sum(Df[None]*base,axis=1)/denom)[...,None,:,:]
-        z=back(zf,shape)
-        # zf is already available: do not FFT all N*K spatial maps again.
-        q0=back(np.sum(Df[None]*zf,axis=1),shape)
-        q2=np.einsum('ck,nkhw->nchw',W,z,optimize=True)
-        old0=u0;old1=u1;old2=u2
-        a0=q0+lam0
-        u0=(M0*x+rho*a0)/(M0+rho)
-        u1=soft(z+lam1,beta/rho)
-        u2=q2+lam2
-        if gamma>0 and labels is not None:
-            # Prox of gamma*log(1+exp(-y*(v+b))). Newton updates with a
-            # stationarity check; 8 iterations can be insufficient for high gamma.
-            # Hessian >= rho > 0 guarantees a unique proximal minimizer.
-            mask=labels!=0; yy=labels[mask].astype(DT)
-            a=u2[mask];bb=np.broadcast_to(b[None,:,None,None],u2.shape)[mask]
-            u2[mask]=logistic_prox(a,yy,bb,gamma,rho)
-        lam0+=q0-u0;lam1+=z-u1;lam2+=q2-u2
+        checking=it==0 or (it+1)%10==0 or it==maxiter-1
+        if checking:old0=u0.copy();old1=u1.copy();old2=u2.copy()
+        for start in range(0,N,chunk_size):
+            sl=slice(start,min(start+chunk_size,N))
+            R0=four(u0[sl]-lam0[sl]);R1=four(u1[sl]-lam1[sl]);R2=four(u2[sl]-lam2[sl])
+            rhs=np.conj(Df)[None]*R0[:,None]+R1+np.einsum('ck,nchw->nkhw',W,R2,optimize=True)
+            if E is not None:
+                projected=np.einsum('ck,nkhw->nchw',W,rhs,optimize=True)
+                base=rhs-np.einsum('kc,nchw->nkhw',E,projected,optimize=True)
+            else:base=np.einsum('kl,nlhw->nkhw',B,rhs,optimize=True) if C else rhs
+            zf=base-Bd[None]*(np.sum(Df[None]*base,axis=1)/denom)[...,None,:,:]
+            zz=back(zf,shape)
+            p0=back(np.sum(Df[None]*zf,axis=1),shape)
+            p2=np.einsum('ck,nkhw->nchw',W,zz,optimize=True)
+            mask0=M0 if M0.shape[0]==1 else M0[sl]
+            v0=(mask0*x[sl]+rho*(p0+lam0[sl]))/(mask0+rho)
+            v1=soft(zz+lam1[sl],beta/rho);v2=p2+lam2[sl]
+            if gamma>0 and labels is not None:
+                mask=labels[sl]!=0;yy=labels[sl][mask].astype(DT)
+                bb=np.broadcast_to(b[None,:,None,None],v2.shape)[mask]
+                v2[mask]=logistic_prox(v2[mask],yy,bb,gamma,rho)
+            z[sl]=zz;q0[sl]=p0;q2[sl]=p2
+            u0[sl]=v0;u1[sl]=v1;u2[sl]=v2
+            lam0[sl]+=p0-v0;lam1[sl]+=zz-v1;lam2[sl]+=p2-v2
         if it==0 or (it+1)%10==0 or it==maxiter-1:
             r2=np.sum((q0-u0)**2)+np.sum((z-u1)**2)+np.sum((q2-u2)**2)
             ds=adj(Df,u0-old0)+(u1-old1)+np.einsum('ck,nchw->nkhw',W,u2-old2,optimize=True)
@@ -160,9 +159,9 @@ def solve_z(D,x,W,b,labels,gamma,beta,rho=1.,maxiter=150,tol=0.003,zinit=None, M
                 ratio=(pr/max(eps_pri,1e-12))/max(dr/max(eps_dual,1e-12),1e-12)
                 newrho=min(rho*2,64.) if ratio>10 else max(rho/2,1/64) if ratio<.1 else rho
                 lam0*=rho/newrho;lam1*=rho/newrho;lam2*=rho/newrho;rho=newrho
-    return z,{'iterations':it+1,'converged':converged,'residuals':trace,'maxiter':maxiter,'tolerance':tol}
+    return z,{'iterations':it+1,'converged':converged,'residuals':trace,'maxiter':maxiter,'tolerance':tol,'compute_chunk_size':chunk_size}
 
-def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
+def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False,rho_floor=1/64):
     """Paper boundary-masked D ADMM: split v0=Z*d, v1=d in unit ball.
 
     FFT update (Z*Z+I)d = Z*(v0-lambda0)+(v1-lambda1).
@@ -179,6 +178,7 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
     _,singular,Vh=np.linalg.svd(zmat,full_matrices=False)
     rank=min(N,K)
     Vh=Vh.reshape(H,W//2+1,rank,K)
+    V=Vh.conj();Zadj=Zf.conj()
     inverse_values=(1/(1+singular**2)).reshape(H,W//2+1,rank)
     v1=proj(np.pad(D0,((0,0),(0,H-f),(0,W-f))),f)
     lam1=np.zeros_like(v1)
@@ -189,13 +189,13 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
     initial_cost=float(.5*np.sum(M*(initial_reconstruction-x)**2))
     trace=[];converged=False
     for i in range(maxiter):
-        rhs=np.einsum('nkhw,nhw->khw',Zf.conj(),four(v0-lam0),optimize=True)+four(v1-lam1)
+        rhs=np.einsum('nkhw,nhw->khw',Zadj,four(v0-lam0),optimize=True)+four(v1-lam1)
         vr=np.einsum('hwrk,khw->rhw',Vh,rhs,optimize=True)
         scaled=vr*np.moveaxis(inverse_values,-1,0)
         if N<K:
-            dhat=rhs+np.einsum('hwrk,rhw->khw',Vh.conj(),scaled-vr,optimize=True)
+            dhat=rhs+np.einsum('hwrk,rhw->khw',V,scaled-vr,optimize=True)
         else:
-            dhat=np.einsum('hwrk,rhw->khw',Vh.conj(),scaled,optimize=True)
+            dhat=np.einsum('hwrk,rhw->khw',V,scaled,optimize=True)
         d=back(dhat,sh)
         q0=back(np.sum(dhat[None]*Zf,axis=1),sh)
         old0=v0;old1=v1
@@ -204,11 +204,11 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
         lam0+=(q0-v0);lam1+=(d-v1)
         if i==0 or (i+1)%10==0 or i==maxiter-1:
             pr=np.sqrt(np.sum((q0-v0)**2)+np.sum((d-v1)**2))
-            ds=rho*(back(np.einsum('nkhw,nhw->khw',Zf.conj(),four(v0-old0),optimize=True),sh)+(v1-old1))
+            ds=rho*(back(np.einsum('nkhw,nhw->khw',Zadj,four(v0-old0),optimize=True),sh)+(v1-old1))
             du=np.linalg.norm(ds)
             n_pr=np.sqrt(np.sum(q0*q0)+np.sum(d*d))
             n_aux=np.sqrt(np.sum(v0*v0)+np.sum(v1*v1))
-            ldual=back(np.einsum('nkhw,nhw->khw',Zf.conj(),four(lam0),optimize=True),sh)+lam1
+            ldual=back(np.einsum('nkhw,nhw->khw',Zadj,four(lam0),optimize=True),sh)+lam1
             eps_pri=np.sqrt(q0.size+d.size)*1e-4+tol*max(n_pr,n_aux)
             eps_dual=np.sqrt(d.size)*1e-4+tol*rho*np.linalg.norm(ldual)
             feasible_reconstruction=back(np.sum(four(v1)[None]*Zf,axis=1),sh)
@@ -228,13 +228,13 @@ def solve_d(x,Z,D0,rho=1.,maxiter=150,tol=0.003,M_override=None,adaptive=False):
                 converged=True;break
             if adaptive and (i+1)%20==0:
                 ratio=(pr/max(eps_pri,1e-12))/max(du/max(eps_dual,1e-12),1e-12)
-                newrho=min(rho*2,64.) if ratio>10 else max(rho/2,1/64) if ratio<.1 else rho
+                newrho=min(rho*2,64.) if ratio>10 else max(rho/2,rho_floor) if ratio<.1 else rho
                 lam0*=rho/newrho;lam1*=rho/newrho;rho=newrho
     rejected=feasible_cost>initial_cost+1e-7*max(1.,initial_cost)
     result=D0.copy() if rejected else v1[:,:f,:f].copy()
     return result,{'iterations':i+1,'converged':converged and not rejected,'residuals':trace,
                   'maxiter':maxiter,'tolerance':tol,'initial_feasible_objective':initial_cost,
-                  'candidate_feasible_objective':feasible_cost,'descent_guard_rejected':rejected}
+                  'candidate_feasible_objective':feasible_cost,'descent_guard_rejected':rejected,'rho_floor':rho_floor}
 
 def objective(x,Z,D,W,b,labels,beta,gamma,alpha):
     R=conv(kernel_fft(D,x.shape[-2:]),Z)-x
