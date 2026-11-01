@@ -1,0 +1,880 @@
+# MASTER PROMPT — Complete Final Project: Supervised Convolutional Sparse Coding on COCO 2017
+
+## บทบาทและเป้าหมาย
+
+ฉันต้องการให้คุณทำหน้าที่เป็น AI Research Engineer, Computer Vision Researcher และ Python Developer เพื่อพัฒนาโปรเจกต์ **Supervised Convolutional Sparse Coding (SCSC) vs. Conventional Convolutional Sparse Coding (CSC)** ฉบับ Final ที่สามารถนำไปส่งอาจารย์ได้
+
+**แหล่งข้อมูลหลักที่มีอยู่ใน Codex Cloud แล้ว:**
+
+- GitHub Repository (Private): `Phatson-151/Dataset_COCO` — เชื่อมต่อไว้กับ Codex Cloud แล้ว ให้ใช้ Repository นี้เป็น Project Root และเป็นจุดเริ่มต้นของงานทั้งหมด
+- Source Code ที่อัปโหลดจาก SCSC เวอร์ชันก่อนหน้า: `paper_scsc/` และ Python scripts ที่ Repository Root
+- Dataset ที่อัปโหลดแล้ว: `data/` (สำรวจโครงสร้างจริง รวมถึง `data/coco/`) และ `coco_scsc_manifest.json`
+- Unit Tests เดิม: `tests/`
+- Dependencies และรายละเอียดเดิม: `requirements.txt`, `README.md`, `PROJECT_STATUS_TH.md`
+- ผลรันเก่าหากพบใน Repository: ใช้อ่านเพื่อวิเคราะห์ปัญหาได้เท่านั้น **ห้ามนำผลเก่ามาอ้างเป็นผลของการทดลองใหม่**
+
+**เอกสารอ้างอิงที่ต้องอ่านจาก Repository:**
+
+- `references/Supervised Convolutional Sparse Coding.pdf` — Affara, Ghanem และ Wonka
+- `references/ADMM.pdf` — SPORCO: A Python Package for Standard and Convolutional Sparse Representations
+
+ไฟล์ PDF สองไฟล์นี้ผู้ใช้จะอัปโหลดไปไว้ในโฟลเดอร์ `references/` ของ Repository ก่อนส่งคำสั่งหลัก หากยังไม่พบจริง ให้รายงานไฟล์ที่ขาดอย่างตรงไปตรงมา และใช้ลิงก์ต้นฉบับที่ตรวจสอบได้เป็นทางเลือก (เฉพาะเมื่อ Cloud เข้าถึงอินเทอร์เน็ตได้) ห้ามอ้างว่าอ่าน PDF แล้วหากยังไม่ได้อ่าน
+
+**วิธีเริ่มต้นงาน:**
+
+1. ตรวจสอบว่า Environment เชื่อม Repository `Phatson-151/Dataset_COCO` และ checkout โค้ดได้จริง
+2. แสดงโครงสร้างไฟล์ที่มีอยู่และตรวจความสมบูรณ์ของ Dataset, annotations, paths, Python imports และ dependencies; ห้ามสมมติว่ามี ZIP แนบอยู่ในแชท Codex
+3. อ่าน Paper ทั้งสองไฟล์แล้วทำตาราง Audit เปรียบเทียบสมการ Algorithm, ADMM, Figure/Table ของ Paper กับโค้ดที่มีอยู่
+4. ใช้โค้ดเดิมเป็นฐานในการแก้ไข โดยสร้าง branch/commits สำหรับงานใหม่และสำรองหลักฐานเก่าอย่างเหมาะสม ไม่ลบ Source Data หรือไฟล์อ้างอิงที่จำเป็น
+5. ตรวจ CPU, RAM, GPU, พื้นที่เก็บข้อมูล เวลา/ข้อจำกัด Cloud และสิทธิ์ Network ก่อนรัน Training หนัก ๆ
+
+ให้ใช้ Paper ต้นฉบับเป็นหลักในการออกแบบ Mathematical Formulation, Optimization, Experimental Protocol และ Evaluation
+
+**เป้าหมายสูงสุดของโปรเจกต์:**
+
+พิสูจน์ด้วยการทดลองว่า SCSC สามารถเรียนรู้ Discriminative Convolutional Dictionaries ที่มีความหมายเชิง Semantic มากกว่า CSC ทำให้ Classification Maps ของ SCSC แยกตำแหน่งวัตถุได้ดีขึ้น ลดการตอบสนองผิดบริเวณ Background ลด Class Confusion และรักษาหรือเพิ่ม Reconstruction Performance บน Unseen Data
+
+ต้องการให้ผลของ SCSC ใกล้เคียงลักษณะความสำเร็จของ **Figure 4 ใน Paper** มากที่สุด โดยมีทั้งภาพที่มองเห็นความแตกต่างและตัวเลขที่ตรวจสอบได้จริง
+
+ห้ามสร้าง ปรับแต่ง เลือกแสดง หรือบิดเบือนผลลัพธ์ให้ SCSC ดูชนะ CSC โดยไม่มีหลักฐานจากโมเดลที่รันจริง หากผลยังไม่ดี ต้องวิเคราะห์สาเหตุ ปรับปรุงโมเดล และทดลองอย่างเป็นระบบ โดยยอมรับผลที่ไม่เป็นไปตามสมมติฐาน
+
+---
+
+# PART 1 — Dataset และ Experimental Setup
+
+## 1.1 Dataset
+
+ใช้ **Microsoft COCO 2017 Dataset** จาก `data/` ใน GitHub Repository ที่เชื่อมไว้ โดยเริ่มจาก subset ที่มีอยู่จริง และดาวน์โหลด/จัดเตรียมข้อมูลเพิ่มเติมเฉพาะเมื่อ Cloud รองรับและมีสิทธิ์เข้าถึงข้อมูล (อย่าสมมติว่า dataset ใน repo มีครบ COCO ทั้งชุด) กำหนดคลาสเป้าหมายทั้งหมด 4 คลาส:
+
+| Class ID | Class      |
+| -------- | ---------- |
+| 0        | Background |
+| 1        | Person     |
+| 2        | Car        |
+| 3        | Motorcycle |
+
+Background หมายถึงพิกเซลที่ไม่ใช่สามคลาสเป้าหมาย โดยต้องสร้างจาก Segmentation Ground Truth อย่างถูกต้อง และกำหนดวิธีจัดการพื้นที่ Ignore, Crowd, Unannotated Regions และ Overlapping Annotations อย่างชัดเจน
+
+ห้ามใช้ Ground Truth ช่วยแก้ Prediction, ลบ False Positives หรือเลือกจุด Activation ในขั้นตอน Inference
+
+## 1.2 Image Resolution
+
+**ต้องใช้ภาพความละเอียดต้นฉบับจริง (Original / Native Resolution)**
+
+ข้อกำหนด:
+
+- ห้าม Resize ภาพเป็น 64×64, 128×128 หรือขนาดอื่นก่อนฝึก
+- ห้ามใช้ภาพย่อเป็นข้อมูลหลักในการ Train, Validation หรือ Test
+- ใช้ภาพ RGB ต้นฉบับ และสร้าง Ground Truth Masks ในพิกัดเดียวกับภาพ
+- หากต้องใช้ Tiled Processing เพื่อจัดการหน่วยความจำ ต้องตัด Tiles จากพิกเซลต้นฉบับโดยตรงโดยไม่มี Downsampling
+- ใช้ Overlapping Tiles และ Boundary Handling เมื่อเหมาะสม
+- ทำนายและประเมินบนพิกัดความละเอียดต้นฉบับ
+- ไม่ใช้การขยาย Score Maps จากภาพขนาดเล็กเป็นผลลัพธ์หลัก
+
+ให้พยายามทำ Full-image Optimization ตาม Paper หากทรัพยากรรองรับ หากต้องใช้ Tiled/Streaming Approximation ต้องอธิบายอย่างชัดเจนว่าแตกต่างจาก Global Optimization อย่างไร และไม่เรียกผลว่า Exact Full-image Optimization
+
+## 1.3 Dataset Splitting
+
+ใช้ TRAIN / VALIDATION / TEST อย่างเป็นระบบ
+
+- TRAIN: ฝึก Dictionary, Sparse Codes และ Classifier
+- VALIDATION: เลือก Hyperparameters, Dictionary Size, Gamma และ Threshold
+- TEST: ประเมินผลสุดท้ายบนข้อมูลอิสระ
+
+ต้องตรวจสอบ Image ID ไม่ให้ซ้ำกันระหว่างชุดข้อมูล
+
+ให้ขยายจำนวนภาพมากกว่าเวอร์ชันก่อนหน้าที่ใช้ TRAIN 10 / VAL 3 / TEST 5 หาก Dataset มีภาพเพียงพอ โดยกำหนดจำนวนจริงตามข้อมูลที่เข้าถึงได้ และรายงาน Image IDs ทุกชุด
+
+หาก TEST เดิมเคยถูกใช้ปรับโมเดล ต้องจัดชุด Final Holdout ใหม่ที่ไม่เคยถูกใช้เลือกโมเดล พร้อมระบุข้อจำกัดเมื่อไม่สามารถจัดข้อมูลใหม่ได้
+
+ทุกการทดลอง CSC และ SCSC ต้องใช้ Data Split และหลักเกณฑ์การประเมินเดียวกัน
+
+---
+
+# PART 2 — Mathematical Formulation และ ADMM
+
+## 2.1 CSC Baseline
+
+ทำ CSC ตามสมการของ Paper โดยมี Reconstruction Loss, L1 Sparsity และ Dictionary Constraints
+
+[
+\min\_{D,Z}\frac12|X-D\*Z|\_2^2+\beta|Z|\_1
+]
+
+ใช้ Boundary Mask และ Unit-norm Dictionary Constraints ตามความเหมาะสมของ Paper
+
+## 2.2 Supervised CSC
+
+ทำ SCSC ตามแนวคิด Equation 5–8 ของ Paper:
+
+[
+\min\_{D,Z,\theta}
+\frac12|X-D\*Z|\_2^2+
+\beta|Z|*1+*
+*\gamma\left(\mathcal{L}*{cls}(Y,Z,\theta)+\alpha|\theta|\_2^2\right)
+]
+
+ต้องมี Supervised Classification Loss ที่ส่งผลต่อ Sparse Coding ระหว่างการฝึกจริง ไม่ใช่ทำ CSC ก่อนแล้วเพียงนำ Logistic Regression มาต่อภายหลัง
+
+ใช้ Logistic Regression Supervision ตาม Paper และขยายเป็น Multiclass โดยพิจารณา One-vs-All ตามต้นฉบับ พร้อม Background Handling อย่างชัดเจน
+
+หากมีการใช้ Multinomial Softmax หรือแนวทางที่ต่างจาก Paper ให้แยกเป็น Experiment เพิ่มเติมและระบุว่าเป็น Extension ไม่ใช่การทำตามต้นฉบับโดยตรง
+
+## 2.3 Optimization
+
+ใช้ Alternating Optimization / Coordinate Descent ตาม Algorithm 2 ใน Paper ประกอบด้วย:
+
+1. Supervised Sparse Coding Update (Z-step)
+2. Dictionary Update (D-step)
+3. Classifier Update (θ-step)
+
+ใช้ FFT-based ADMM และวิธีแก้ Linear System ที่มีประสิทธิภาพตาม Paper และหลักการ SPORCO
+
+## 2.4 ADMM Convergence
+
+ปัญหาสำคัญจากเวอร์ชันก่อนคือ ADMM ไม่ Converge ครบทุก Batch
+
+ต้องแก้และตรวจสอบ:
+
+- Primal Residual
+- Dual Residual
+- Absolute / Relative Tolerance
+- Objective Function
+- Numerical Stability
+- Dictionary Norm Constraints
+- Warm Starts
+- ADMM Penalty Parameter
+- จำนวน ADMM Iterations
+- การเปลี่ยนแปลงของ Loss ในแต่ละ Outer Iteration
+
+ตั้งเป้าหมายให้ทั้ง CSC และ SCSC Converge ภายใต้เกณฑ์ที่กำหนดล่วงหน้า
+
+สามารถเพิ่มเพดาน ADMM iterations เช่น 500, 1,000 หรือใช้ Adaptive Stopping ตามความจำเป็น
+
+ห้ามรายงานว่า Converged เพียงเพราะครบจำนวน Iterations หรือผ่อน Tolerance จนผ่าน
+
+หากมี Batch ที่ไม่ Converge ให้บันทึกสถานะจริงและวิเคราะห์
+
+## 2.5 Outer Iterations
+
+เพิ่มจากเวอร์ชันเดิม 5 รอบ เป็นอย่างน้อย **10 Outer Iterations**
+
+สามารถทดลอง 10, 15, 20 หรือมากกว่านั้น หากผลลัพธ์ยังดีขึ้นและการคำนวณรองรับ
+
+ให้ตรวจ:
+
+- Reconstruction Loss
+- Classification Loss
+- Total Objective
+- Validation AP / mIoU
+- Dictionary Changes
+- Convergence Ratio
+
+ห้ามเลือกจำนวน Outer Iterations จากผล TEST
+
+---
+
+# PART 3 — Hyperparameter Experiments
+
+ต้องทดลองตามรูปแบบ Paper ไม่ใช่ทดลอง Dictionary Size อย่างเดียว
+
+## 3.1 Gamma Sweep
+
+ทดลองค่า Classification Tradeoff γ หลายค่า
+
+ตัวอย่างค่าเริ่มต้น:
+
+`γ = [0, 0.05, 0.1, 0.15, 0.2, 0.5, 1, 2, 5, 10, 100]`
+
+ค่า γ=0 ใช้เป็น CSC Baseline และค่าที่มากกว่าศูนย์ใช้สำหรับ SCSC
+
+ตรวจสอบสเกลของ Loss ก่อน เพราะค่าที่เหมาะสมขึ้นอยู่กับการ Sum/Mean Loss, จำนวนพิกเซล และการ Normalization
+
+หากค่าข้างต้นไม่เหมาะกับสเกลจริง ให้เพิ่มการค้นหาแบบ Logarithmic หรือช่วงที่ละเอียดขึ้น พร้อมอธิบายเหตุผล
+
+สำหรับทุกค่า γ ต้องบันทึก:
+
+- AP แยกแต่ละคลาส
+- Macro AP / mAP
+- PSNR
+- SSIM เป็นผลเสริม
+- IoU / mIoU
+- Precision / Recall
+- Background IoU
+- Class Confusion
+- ADMM Convergence
+- Reconstruction / Classification Loss
+- Runtime
+
+ต้องเลือก γ ที่เหมาะสมจาก VALIDATION โดยไม่ใช้ TEST
+
+## 3.2 Dictionary Size Experiment
+
+ทดลองจำนวน Filters (K) หลายขนาด
+
+ใช้ค่าเดิมเป็นจุดเริ่มต้น:
+
+`K = [4, 8, 12, 16, 32, 49, 100]`
+
+Paper มีการศึกษาจำนวน Filters 4, 16, 49 และ 100 ดังนั้นให้พยายามรวมค่าที่เปรียบเทียบกับ Paper ได้ด้วย
+
+หากการฝึกบางขนาดใช้ทรัพยากรเกินข้อจำกัด ให้รายงานตามจริงและแสดงชุดที่ทดลองสำเร็จ
+
+ทุก K ต้องเปรียบเทียบ CSC/SCSC ด้วยเงื่อนไขเดียวกัน
+
+## 3.3 Number of Training Images Experiment
+
+ทดลองจำนวนภาพฝึก (N) ตามแนว Figure 5(c) และ 5(f)
+
+ตัวอย่าง:
+
+`N = [1, 5, 10, 20, 40]`
+
+Paper ใช้การเปรียบเทียบจำนวนภาพ เช่น 1, 10, 25, 40 ให้พยายามรวมค่าตาม Paper หาก Dataset เพียงพอ
+
+ต้องวิเคราะห์ว่าการเพิ่ม Training Images ช่วยให้ SCSC มี Discriminability และ Generalization ดีขึ้นหรือไม่
+
+ใช้ VAL/TEST ชุดเดิมระหว่างการทดลอง N และให้ Training Subsets เป็นแบบ Nested เมื่อเหมาะสม
+
+## 3.4 Other Parameters
+
+ทดลองหรือควบคุม:
+
+- β: Sparsity Coefficient
+- α: Classifier Regularization
+- Filter Size เช่น 11×11 และ 21×21 ตามบริบทของ Paper
+- Learning Rate / Classifier Solver
+- Sampling Strategy
+- Number of Positive/Negative Samples
+- Number of Outer Iterations
+
+ไม่จำเป็นต้องทำ Full Cartesian Grid ที่มีต้นทุนสูงเกินไป แต่ต้องมีวิธีคัดเลือกการทดลองที่ชัดเจน และไม่ละเลย Gamma, K, N ซึ่งเป็นแกนหลักของ Paper
+
+---
+
+# PART 4 — Figure 3: Learned Dictionary Elements
+
+ต้องสร้างภาพตามแนวคิด:
+
+**Fig. 3: Learned elements using unsupervised (left) and supervised CSC (right).**
+
+ภาพนี้เป็นหนึ่งในผลลัพธ์หลักที่ต้องส่ง
+
+## ข้อกำหนด
+
+แสดง Learned Dictionary Filters ของ CSC และ SCSC ในสองฝั่ง:
+
+- Left: Unsupervised CSC Dictionary
+- Right: Supervised SCSC Dictionary
+
+ต้องใช้ K เดียวกัน ขนาด Filter เดียวกัน และ Initialization ที่ควบคุมอย่างเป็นธรรม
+
+ให้แสดง Filters ทั้งหมดหรือจำนวนที่กำหนดล่วงหน้าในรูปแบบ Grid
+
+สร้างภาพหลายรูปแบบ:
+
+- Grayscale Filters
+- RGB Filters เมื่อใช้ Multi-channel Dictionary
+- Dictionary Comparison ตามแต่ละ K
+- Dictionary Evolution ตาม Outer Iteration หากทำได้
+
+ต้องวัดและรายงานข้อมูลเชิงปริมาณที่เกี่ยวข้อง เช่น Dictionary Diversity หรือ Filter Correlation เป็นผลเสริม แต่ต้องแยกออกจากตัวชี้วัดหลักของ Paper
+
+ห้ามเลือกแสดงเฉพาะ Filters ที่ SCSC ดูสวยกว่า CSC โดยไม่มีเกณฑ์ที่ระบุไว้
+
+---
+
+# PART 5 — Figure 4: FINAL MULTICLASS ACTIVATION MAP
+
+**นี่คือผลลัพธ์สำคัญที่สุดของโปรเจกต์**
+
+ฉันต้องการทำ Figure 4 ของ Paper แต่ขยายเป็น 4 คลาสตาม COCO Dataset ของเรา
+
+ชื่อผลลัพธ์:
+
+**Final Multiclass Activation Map — CSC vs SCSC**
+
+ความหมายของคำนี้ในโปรเจกต์ฉันคือ **Pixelwise Classification / Activation Score Maps ในรูปแบบ Figure 4 ของ Paper** ไม่ใช่การนำจุด Sparse Activation ที่เลือกเองมาซ้อนบนภาพเท่านั้น
+
+Paper แสดง:
+
+- (a) Input Image
+- (b) Unsupervised CSC Classification Result
+- (c) Supervised CSC Classification Result
+- (d) Ground Truth Labels
+
+ให้สร้างรูปแบบเดียวกันจำนวน **4 ชุด**
+
+### Figure 4.1 — Person
+
+แสดง:
+(a) Original Image
+(b) CSC Person Classification Map
+(c) SCSC Person Classification Map
+(d) Person Ground Truth
+
+### Figure 4.2 — Car
+
+แสดง:
+(a) Original Image
+(b) CSC Car Classification Map
+(c) SCSC Car Classification Map
+(d) Car Ground Truth
+
+### Figure 4.3 — Motorcycle
+
+แสดง:
+(a) Original Image
+(b) CSC Motorcycle Classification Map
+(c) SCSC Motorcycle Classification Map
+(d) Motorcycle Ground Truth
+
+### Figure 4.4 — Background
+
+แสดง:
+(a) Original Image
+(b) CSC Background Classification Map
+(c) SCSC Background Classification Map
+(d) Background Ground Truth
+
+รวมทั้งหมด 16 Panels
+
+นอกจากนี้ให้สร้าง Composite Figure รวมทั้ง 4 คลาสไว้ในภาพเดียวในรูปแบบ 4 Rows × 4 Columns
+
+## วิธีการสร้าง Classification Maps
+
+ต้องยึด Figure 4 ของ Paper ให้มากที่สุด:
+
+1. ใช้ Dictionary ที่เรียนรู้จาก CSC และ SCSC ตามลำดับ
+2. Infer Sparse Maps จาก Dictionary แต่ละแบบ
+3. ฝึก Logistic Regression Classifier ใหม่บน TRAIN Sparse Maps ของแต่ละ Dictionary ตามวิธีประเมินของ Paper
+4. สร้าง Pixelwise Classification Score Maps สำหรับแต่ละคลาส
+5. ใช้ Multiclass Decision Rule ที่กำหนดไว้ล่วงหน้า
+6. มี Background Prediction ที่ชัดเจน
+7. แสดง CSC/SCSC ด้วยสเกลสีและ Threshold ที่เปรียบเทียบอย่างเป็นธรรม
+8. ประเมินกับ Ground Truth บนพิกัด Native Resolution
+
+ต้องแยกการแสดง:
+
+- Raw Classification Score / Probability Map
+- Binary Class Prediction Map
+- Multiclass Prediction Map
+- Optional Activation Points Overlay
+
+ทั้งภาพและ Metrics ต้องมาจากผล Prediction ชุดเดียวกัน
+
+อย่าทำให้ภาพดูสะอาดโดยลด Threshold จน Recall แย่ หรือใช้ Ground Truth ลบจุดผิด
+
+## เป้าหมายคุณภาพ
+
+พยายามทำให้ SCSC มี:
+
+- Background Noise ต่ำกว่า CSC
+- True Positive Activations สูงกว่า
+- False Positives ต่ำกว่า
+- False Negatives ต่ำกว่า
+- Class Confusion น้อยกว่า
+- Localization ของ Person, Car, Motorcycle ดีขึ้น
+- Background Classification ดีขึ้น
+- AP, Precision, Recall, IoU, mIoU ดีขึ้นบน Unseen Data
+
+ต้องรายงานทั้งภาพที่ SCSC ดีขึ้นและภาพที่ SCSC ยังด้อยกว่า ไม่ใช่เลือกเฉพาะภาพที่ชนะ
+
+---
+
+# PART 6 — Figure 5: AP และ PSNR Experiments
+
+ต้องสร้าง Figure 5 จำนวน 6 Subplots เหมือน Paper โดยใช้ Dataset ของเรา
+
+**Fig. 5:**
+
+(a) AP vs Gamma
+(b) AP vs Number of Filters K
+(c) AP vs Number of Training Images N
+(d) PSNR vs Gamma
+(e) PSNR vs Number of Filters K
+(f) PSNR vs Number of Training Images N
+
+ทุกกราฟต้องมี:
+
+- CSC Baseline
+- SCSC Results
+- ชื่อแกน
+- หน่วย
+- Legend
+- Hyperparameters ที่ใช้
+- ข้อมูล Numeric ที่สร้างกราฟ
+
+ต้องสร้างกราฟแบบแยกคลาสและแบบ Macro Average เมื่อเหมาะสม
+
+## Figure 5(a)
+
+เปรียบเทียบ AP ของ CSC และ SCSC เมื่อ γ เปลี่ยน
+
+## Figure 5(b)
+
+เปรียบเทียบ AP ของ CSC/SCSC เมื่อจำนวน Filters K เพิ่มขึ้น
+
+## Figure 5(c)
+
+เปรียบเทียบ AP เมื่อเพิ่มจำนวน Training Images N
+
+## Figure 5(d)
+
+เปรียบเทียบ PSNR เมื่อ γ เพิ่มขึ้น
+
+## Figure 5(e)
+
+เปรียบเทียบ PSNR เมื่อ K เพิ่มขึ้น
+
+## Figure 5(f)
+
+เปรียบเทียบ PSNR เมื่อ N เพิ่มขึ้น
+
+หาก CSC ไม่ขึ้นกับ γ ให้แสดง CSC เป็น Horizontal Baseline เหมือนหลักการของ Paper
+
+สำหรับกราฟที่เปลี่ยน K/N ให้กำหนด γ ของ SCSC อย่างชัดเจน และรายงานว่าเลือกจาก VAL อย่างไร
+
+สร้างทั้ง Figure 5 รวม 6 Subplots และกราฟแยกความละเอียดสูง
+
+---
+
+# PART 7 — Figure 6: COCO Class-specific Reconstruction
+
+Paper เดิมแสดง:
+
+**Fig. 6: PSNR score on (a) Cat in COCO, (b) Building in LabelMe and (c) Tree in LabelMe as γ increases.**
+
+สำหรับโปรเจกต์ของเรา ให้แทนด้วยสามคลาสของ COCO
+
+### Figure 6(a) — Person PSNR vs Gamma
+
+### Figure 6(b) — Car PSNR vs Gamma
+
+### Figure 6(c) — Motorcycle PSNR vs Gamma
+
+เปรียบเทียบ CSC/SCSC ในทุกกราฟ
+
+ต้องนิยาม Class-specific Reconstruction PSNR ให้ชัดเจน เช่น PSNR บนพิกเซลภายใน Ground Truth Object Masks และรายงาน Global Image PSNR เพิ่มเติม
+
+ห้ามนำ PSNR ของภาพเดียวกันมาแสดงเป็นคนละคลาสโดยไม่มีวิธีการคำนวณรายคลาสที่ถูกต้อง
+
+ให้แสดงว่า SCSC ที่ได้รับ Supervision จากแต่ละคลาสสามารถ Reconstruction วัตถุคลาสนั้นได้ดีขึ้นหรือไม่
+
+สร้างกราฟ 3 Panels พร้อมข้อมูลตัวเลข CSV/JSON
+
+---
+
+# PART 8 — Table 1: AP and PSNR for Different Gamma
+
+Paper เดิม:
+
+**Table 1: AP and PSNR of CSC and SCSC for varied γ on ECP Dataset Classes.**
+
+ให้สร้างตารางแบบเดียวกันแต่ใช้ COCO Dataset ของเรา
+
+แถวที่ต้องมี:
+
+- Person AP
+- Car AP
+- Motorcycle AP
+- Background AP
+- Foreground Macro AP
+- Global PSNR
+- Person Reconstruction PSNR
+- Car Reconstruction PSNR
+- Motorcycle Reconstruction PSNR
+
+คอลัมน์เป็นค่า γ ที่ทดลองทั้งหมด รวม CSC Baseline γ=0
+
+ระบุ Best Gamma ตาม Validation แต่ไม่เลือกค่าที่ดีที่สุดย้อนหลังจาก TEST
+
+รายงานทั้ง AP ในหน่วย 0–1 หรือเปอร์เซ็นต์อย่างสอดคล้องกัน และ PSNR ใน dB
+
+ต้องมีตารางบน VALIDATION สำหรับเลือกค่า และตาราง TEST เฉพาะโมเดลที่เลือกแล้ว หรือการวิเคราะห์ Sweep บน TEST ที่แยกชัดเจนว่าเป็นการวิเคราะห์เชิงสำรวจ ไม่ใช่ใช้เลือกโมเดล
+
+---
+
+# PART 9 — Table 2: Image Inpainting
+
+Paper มีการทดลอง Image Inpainting ด้วย จึงต้องรวมเข้ามา
+
+ใช้ Random Missing Pixel Mask 50% ตามแนว Paper
+
+เปรียบเทียบ:
+
+- CSC Inpainting
+- SCSC Inpainting
+
+วัด:
+
+- PSNR เทียบภาพต้นฉบับเต็ม
+- PSNR เฉพาะพิกเซลที่ถูกลบ
+- SSIM เป็นผลเสริม
+- Relative Reconstruction Error
+
+ทดลองบน Unseen Images
+
+ถ้า Dataset มีข้อมูลเพียงพอ ให้แยก:
+
+- In-domain Images ที่มีคลาสเป้าหมาย
+- Out-of-domain / Other-category Images ที่มีแหล่งข้อมูลและเกณฑ์ชัดเจน
+
+หากไม่มี Other Dataset ห้ามอ้างว่าเป็น Cross-dataset Evaluation ตาม Paper แต่ให้ใช้ Held-out Categories พร้อมระบุว่าเป็นการประยุกต์
+
+สร้าง:
+
+- ตารางผล Inpainting
+- Original / Masked / CSC / SCSC Comparison
+- PSNR Comparison Graph
+
+ใช้ Missing Mask เดียวกันสำหรับ CSC และ SCSC
+
+---
+
+# PART 10 — Complete Multiclass Evaluation
+
+นอกเหนือจาก Paper ต้องเพิ่มการวัดผลสำหรับ 4 คลาสอย่างครบถ้วน
+
+## Required Metrics
+
+1. Per-class Average Precision (AP)
+2. Macro Average Precision / mAP
+3. Per-class IoU
+4. Foreground mIoU (Person, Car, Motorcycle)
+5. All-class mIoU (รวม Background)
+6. Background IoU
+7. Per-class Precision
+8. Per-class Recall
+9. Per-class F1-score
+10. Overall Pixel Accuracy
+11. Confusion Matrix 4×4
+12. Normalized Confusion Matrix
+13. Class Confusion Rate
+14. False Positive Rate บน Background
+15. Reconstruction PSNR
+16. Relative Reconstruction Error
+17. Inpainting PSNR
+18. ADMM Convergence Ratio
+19. Runtime และ Peak Memory
+
+Precision/Recall/AP ต้องคำนวณตามนิยามจริง และแยกให้ชัดระหว่าง Pixelwise Classification Metrics กับ Point Localization Metrics
+
+## Class Confusion
+
+ต้องรายงานว่ามีการสับสนแบบใด เช่น
+
+- Person → Car
+- Person → Motorcycle
+- Car → Person
+- Car → Motorcycle
+- Motorcycle → Person
+- Motorcycle → Car
+- Foreground → Background
+- Background → Foreground
+
+สร้าง Heatmap และตารางเปรียบเทียบ CSC/SCSC
+
+สำหรับ Background ที่มีจำนวนพิกเซลมาก ต้องรายงานผลแยกจาก Foreground เพื่อไม่ให้ Background ครอบงำคะแนนภาพรวม
+
+## Statistical Reliability
+
+เมื่อข้อมูลเพียงพอ ให้ใช้หลาย Random Seeds และ Paired Image-level Bootstrap Confidence Intervals
+
+ต้องรายงานจำนวนภาพที่ใช้คำนวณ และห้ามสรุปว่าชนะอย่างมีนัยสำคัญหากข้อมูลยังไม่สนับสนุน
+
+---
+
+# PART 11 — Fair Comparison Rules
+
+ต้องเปรียบเทียบ CSC และ SCSC อย่างเป็นธรรมที่สุด
+
+ข้อกำหนดสำคัญ:
+
+- ใช้ภาพเดียวกันทุกการทดลองคู่
+- ใช้ Train/Validation/Test Split เดียวกัน
+- ใช้จำนวน Filters เดียวกันสำหรับการเปรียบเทียบแต่ละคู่
+- ใช้ Filter Size เดียวกัน
+- ใช้ Initialization หรือ Random Seed ที่ควบคุมได้
+- ใช้ Outer Iterations และ ADMM Stopping Criteria ที่เทียบเคียงกันได้
+- ฝึก Evaluation Classifier ใหม่แยกสำหรับ CSC และ SCSC
+- ใช้วิธีสร้าง Classification Maps เดียวกัน
+- ใช้ Color Scale และ Visualization Protocol เดียวกัน
+- ใช้ Ground Truth เฉพาะส่วนที่อนุญาตในการฝึก/Calibration และการประเมิน
+- ห้ามปรับ Threshold โดยดูผล TEST
+- ห้ามซ่อน Failed Experiments หรือ Non-converged Runs
+
+ถ้ามีการปรับปรุงเฉพาะ SCSC เช่น Class-balanced Sampling หรือ Special Postprocessing ต้องอธิบายความแตกต่างและทำ Ablation เพื่อไม่ให้เกิดการเปรียบเทียบที่ไม่เป็นธรรม
+
+---
+
+# PART 12 — Ablation Studies
+
+ให้ทำการทดลองเพิ่มเติมเพื่อหาสาเหตุว่า SCSC ดีขึ้นหรือแย่ลงเพราะอะไร
+
+ตัวอย่าง:
+
+- CSC Baseline
+- SCSC with Supervision
+- SCSC with Balanced Class Sampling
+- SCSC with Explicit Background Model
+- Different Gamma Values
+- Different Dictionary Sizes
+- Different Outer Iterations
+- Different Training Image Counts
+- Different Classifier Regularization
+
+ต้องแยกให้เห็นว่า Supervised Dictionary Learning ช่วยจริงหรือไม่ ไม่ใช่ผลดีขึ้นจาก Classifier หรือ Postprocessing เพียงอย่างเดียว
+
+ให้เลือก Ablations ที่ทำได้ภายใต้ทรัพยากรจริงและจัดลำดับความสำคัญ โดยการทดลองหลักตาม Paper ต้องมาก่อน
+
+---
+
+# PART 13 — Required Output Figures and Tables
+
+ต้องสร้างและเก็บผลลัพธ์ต่อไปนี้ใน `final output`
+
+| Figure/Table      | รายละเอียด                       |
+| ----------------- | -------------------------------- |
+| Figure 3          | CSC vs SCSC Learned Dictionaries |
+| Figure 4.1        | Person Classification Maps       |
+| Figure 4.2        | Car Classification Maps          |
+| Figure 4.3        | Motorcycle Classification Maps   |
+| Figure 4.4        | Background Classification Maps   |
+| Figure 4 Overview | 4 Classes × 4 Panels             |
+| Figure 5(a–f)     | AP/PSNR vs Gamma, K, N           |
+| Figure 6(a–c)     | PSNR vs Gamma สำหรับสามคลาส      |
+| Table 1           | AP/PSNR สำหรับแต่ละ Gamma        |
+| Table 2           | Inpainting Results               |
+| Additional Figure | Confusion Matrices               |
+| Additional Figure | IoU / mIoU Comparison            |
+| Additional Figure | Precision / Recall Curves        |
+| Additional Figure | ADMM Convergence Graphs          |
+| Additional Figure | Training Loss Curves             |
+| Additional Figure | Reconstruction Comparison        |
+| Additional Table  | Per-class Metrics CSC vs SCSC    |
+| Additional Table  | Gamma/K/N Experiment Summary     |
+| Additional Table  | Runtime and Convergence Summary  |
+
+ให้บันทึกรูปเป็น PNG ความละเอียดสูง พร้อมข้อมูล CSV/JSON ที่ใช้สร้างรูปทุกภาพ
+
+สำหรับ Classification Maps ต้องมีตัวอย่างจากหลายภาพ TEST รวมทั้ง Success Cases และ Failure Cases โดยไม่คัดเลือกเฉพาะภาพที่ SCSC ได้เปรียบ
+
+---
+
+# PART 14 — Output Folder Structure
+
+ให้สร้าง ZIP ใหม่ โดยเก็บเฉพาะโค้ดที่จำเป็นและผลลัพธ์จากการทดลองครั้งใหม่
+
+ตัวอย่างโครงสร้าง:
+
+```text
+SCSC_COCO_PAPER_REPRODUCTION_FINAL/
+│
+├── README.md
+├── requirements.txt
+├── references/
+│   ├── Supervised Convolutional Sparse Coding.pdf
+│   └── ADMM.pdf
+├── config/
+│
+├── src/
+│   ├── data/
+│   ├── csc/
+│   ├── scsc/
+│   ├── admm/
+│   ├── training/
+│   ├── evaluation/
+│   ├── visualization/
+│   └── utils/
+│
+├── scripts/
+│   ├── train_csc.py
+│   ├── train_scsc.py
+│   ├── gamma_sweep.py
+│   ├── dictionary_sweep.py
+│   ├── training_size_sweep.py
+│   ├── evaluate.py
+│   ├── generate_paper_figures.py
+│   └── verify_final.py
+│
+├── tests/
+│
+├── checkpoints/
+│   ├── csc/
+│   └── scsc/
+│
+├── final output/
+│   ├── figures/
+│   │   ├── figure3_dictionaries/
+│   │   ├── figure4_multiclass/
+│   │   ├── figure5_ap_psnr/
+│   │   ├── figure6_class_psnr/
+│   │   ├── confusion_matrices/
+│   │   ├── reconstruction/
+│   │   ├── inpainting/
+│   │   └── convergence/
+│   │
+│   ├── tables/
+│   │   ├── table1_gamma_ap_psnr/
+│   │   ├── table2_inpainting/
+│   │   └── multiclass_metrics/
+│   │
+│   ├── metrics/
+│   ├── score_maps/
+│   ├── logs/
+│   ├── experiment_configs/
+│   └── FINAL_REPORT_TH.md
+│
+└── PROJECT_STATUS_TH.md
+```
+
+สามารถปรับโครงสร้างให้เหมาะสมได้ แต่ต้องค้นหาผลลัพธ์แต่ละ Figure/Table ได้ง่าย โดยยึดโครงสร้าง `paper_scsc/` ที่อยู่ใน Repository เป็นฐาน ไม่จำเป็นต้องเปลี่ยนชื่อเป็น `src/` หากไม่มีเหตุผลทางเทคนิค
+
+ให้ลบโค้ดเก่าที่ไม่ใช้ ผลการทดลองเก่า และไฟล์ซ้ำซ้อนออกจาก ZIP สุดท้าย
+
+ห้ามนำผลลัพธ์จากเวอร์ชันก่อนมาแสดงเป็นผลที่รันใหม่
+
+---
+
+# PART 15 — Final Report
+
+สร้างรายงานการทดลองที่อธิบาย:
+
+1. Project Objective
+2. Related Paper และสิ่งที่นำมาประยุกต์
+3. Dataset Description
+4. Mathematical Formulation
+5. CSC vs SCSC Architecture
+6. ADMM Optimization
+7. Experimental Setup
+8. Hyperparameter Search
+9. Figure 3 Results
+10. Figure 4 Results
+11. Figure 5 Results
+12. Figure 6 Results
+13. Table 1 / Table 2 Results
+14. Multiclass Evaluation
+15. Confusion Matrix Analysis
+16. Reconstruction / Inpainting Results
+17. ADMM Convergence Analysis
+18. Comparison with Original Paper
+19. Limitations
+20. Conclusion
+
+ในส่วน Comparison with Paper ให้เปรียบเทียบ **แนวโน้มและวิธีการทดลอง** ไม่ใช่เปรียบเทียบค่าตัวเลขต่าง Dataset ราวกับเป็นการทดลองเดียวกัน
+
+ระบุอย่างชัดเจนว่า:
+
+- ส่วนไหนทำตาม Paper โดยตรง
+- ส่วนไหนเป็นการดัดแปลงให้เข้ากับ COCO
+- ส่วนไหนเป็น Multiclass Extension ที่เพิ่มใหม่
+- ส่วนไหนยังมีข้อจำกัด
+- SCSC ดีกว่า CSC ใน Metric ใดบ้าง
+- SCSC ยังด้อยกว่า CSC ใน Metric ใดบ้าง
+
+ต้องมีทั้งภาษาไทยที่เข้าใจง่ายและคำศัพท์วิจัยภาษาอังกฤษอย่างถูกต้อง
+
+---
+
+# PART 16 — Execution Requirements
+
+**ฉันต้องการให้คุณรันโปรเจกต์จริง ไม่ใช่เพียงเขียนโค้ดให้ฉันไปรันบนเครื่อง**
+
+ให้ดำเนินการตามลำดับ:
+
+1. Clone/checkout Repository `Phatson-151/Dataset_COCO`; ตรวจสอบโครงสร้าง Source Code และ Dataset ที่มีอยู่จริง (ไม่ต้องรอ ZIP แนบใหม่)
+2. อ่าน `references/Supervised Convolutional Sparse Coding.pdf` และ `references/ADMM.pdf` พร้อมตรวจความสอดคล้องกับโค้ด
+3. แก้ Mathematical Implementation และ ADMM
+4. ตรวจสอบ Full-resolution Data Pipeline
+5. ทดสอบ Unit Tests และ Numerical Correctness
+6. ฝึก CSC/SCSC ใหม่
+7. ทำ Gamma Sweep
+8. ทำ Dictionary Size Sweep
+9. ทำ Training Image Count Experiment
+10. เลือก Hyperparameters จาก VAL
+11. ประเมินบน Independent TEST
+12. สร้าง Figure 3–6
+13. สร้าง Table 1–2
+14. สร้าง Multiclass Metrics และ Confusion Matrices
+15. สร้าง Final Report
+16. ตรวจผลลัพธ์ทุกไฟล์
+17. คัดออกเฉพาะผลทดลองเก่า/ไฟล์ซ้ำจาก `final output` ของ Release ใหม่; ห้ามลบ Dataset, Paper อ้างอิง หรือโค้ดต้นทางที่ยังต้องใช้
+18. สร้าง ZIP Final ใหม่
+19. ส่ง ZIP ที่ดาวน์โหลดได้จริงหากระบบรองรับ Artifact Download; มิฉะนั้น commit/push ไฟล์ผลลัพธ์ที่เหมาะสมและอธิบายวิธีรับ ZIP อย่างถูกต้อง ห้ามประดิษฐ์ลิงก์ไฟล์
+
+ให้ใช้ทรัพยากรของสภาพแวดล้อมที่สามารถเข้าถึงได้อย่างเต็มประสิทธิภาพ โดยตรวจ RAM/CPU/GPU ก่อนและวางแผนการทดลองตามข้อจำกัดจริง
+
+หากสภาพแวดล้อมไม่รองรับการทดลองบางส่วน ต้องรายงานให้ชัดเจนว่าอะไรสำเร็จ อะไรยังไม่ได้รัน และเพราะอะไร ห้ามสร้างผลลัพธ์สมมติ ห้ามอ้างว่ารันสำเร็จหากไม่มีหลักฐาน และห้ามเรียกงานว่า Fully Verified Final เมื่อการทดลองสำคัญยังไม่ครบ
+
+หากทำทั้งหมดไม่ได้ ให้ทำส่วนที่สำคัญที่สุดให้เสร็จจริงมากที่สุดภายในงานปัจจุบัน พร้อมส่งไฟล์ที่ตรวจสอบได้และรายการสิ่งที่ยังขาด ไม่ใช่หยุดแค่การเสนอแผน
+
+## ข้อกำหนดเฉพาะสำหรับ Codex Cloud และ GitHub
+
+- ทำงานบน **Cloud Environment** ที่เลือก Repository `Phatson-151/Dataset_COCO` เท่านั้น ไม่สั่งให้ฉันเปิด VS Code หรือรันบนเครื่องตัวเอง
+- ใช้ Repository ที่มีอยู่ ไม่สร้าง Repo ใหม่ ไม่ขอให้อัปโหลด ZIP โปรเจกต์เดิมซ้ำ และไม่ถือว่าไฟล์จากแชท ChatGPT อื่น ๆ เข้าถึงได้โดยอัตโนมัติ
+- ทำงานบน branch ใหม่เพื่อเก็บ baseline เดิมใน `main` เป็นหลักฐาน; ตรวจสอบ `git status`, `git diff` และ tests ก่อน commit/push
+- ก่อนรัน Experiment Sweep ขนาดใหญ่ ตรวจสอบว่า Cloud มีเวลารัน/พื้นที่/Compute เพียงพอ; หากไม่พอให้ทำการทดลองที่ตรวจสอบได้จริงตามลำดับความสำคัญและเก็บ Checkpoints อย่างปลอดภัย
+- ภาพใน Repo เดิมอาจมีเพียง subset 18 ภาพ หากต้องการ N=25/40 หรือ Validation/Test ที่ใหญ่ขึ้น ต้องจัดหา images และ annotation ที่ถูกต้องเพิ่มจริง ห้ามนำ image ID เดิมซ้ำเพื่อเพิ่ม N
+- ตรวจว่า Cloud อนุญาตให้เข้าถึงอินเทอร์เน็ตสำหรับดาวน์โหลด COCO เพิ่มหรือไม่; หากทำไม่ได้ให้บันทึกข้อจำกัดอย่างชัดเจน
+- โมเดล/ผลลัพธ์ขนาดใหญ่ที่เกิน GitHub limits ให้จัดเก็บเป็น Cloud Artifact หรือที่จัดเก็บที่เข้าถึงได้ แล้วใส่ Manifest, Checksum และวิธีเข้าถึงในรายงาน ไม่ commit binary เกินขีดจำกัดปกติของ GitHub
+- อย่าสั่งให้ลบทุกไฟล์เดิมตั้งแต่เริ่ม: ให้รักษา source code, dataset และ reference PDFs ของ repo แล้วสร้าง `final output` ใหม่อย่างสะอาดสำหรับผลรันใหม่เท่านั้น
+- รายงานทุก Experiment ว่า `completed`, `failed`, `not run` หรือ `inconclusive` และบันทึก Config/Seed/Version/Environment/Checkpoint/Log ประกอบ
+- การฝึก Gamma Sweep, K Sweep และ N Sweep ต้องไม่ใช้ TEST เลือกโมเดล; ถ้าภาพ TEST เดิมเคยถูกเปิดดูเพื่อปรับระบบ ให้จัด independent holdout ใหม่เมื่อสามารถทำได้
+- ความเหนือกว่าของ SCSC เป็น **สมมติฐานที่จะทดสอบ** ไม่ใช่ข้อกำหนดให้สร้างผลลัพธ์ที่ต้องชนะทุกคลาส
+
+
+---
+
+# PART 17 — Final Success Criteria
+
+โปรเจกต์นี้จะถือว่าบรรลุเป้าหมายหลักเมื่อ:
+
+**A. Methodological Correctness**
+
+- SCSC มี Supervised Regularization ตาม Paper จริง
+- Dictionary และ Sparse Codes ถูกเรียนรู้ร่วมกับ Classification Objective
+- CSC/SCSC เปรียบเทียบอย่างเป็นธรรม
+- ADMM Convergence ถูกตรวจสอบได้
+
+**B. Native-resolution Processing**
+
+- ใช้พิกเซลภาพต้นฉบับจริง ไม่มี Downsampling ก่อนฝึก
+- Prediction และ Evaluation อยู่บนพิกัดต้นฉบับ
+- มีการอธิบายวิธีจัดการ Full-image / Tiled Optimization อย่างถูกต้อง
+
+**C. Figure 3**
+
+- แสดง Learned Dictionaries ของ CSC/SCSC และวิเคราะห์ Semantic Discriminability ได้
+
+**D. Figure 4**
+
+- มีครบ Person, Car, Motorcycle, Background
+- มี 4 Panels ต่อคลาสเหมือน Paper
+- Classification Maps มาจากผลทำนายจริง
+- มีตัวเลข IoU/AP/Precision/Recall รองรับ
+- ประเมิน Background Noise และ Class Confusion อย่างชัดเจน
+
+**E. Figure 5–6 / Table 1–2**
+
+- มีการทดลอง Gamma, K, N ตามแนว Paper
+- แสดง AP, PSNR และ Inpainting Results
+- ทุกตัวเลขและกราฟมีข้อมูลต้นทางตรวจสอบได้
+
+**F. Final Conclusion**
+
+- ตรวจสอบได้ว่า SCSC ดีกว่า CSC จริงหรือไม่ในแต่ละด้าน
+- ไม่อ้างผลเหนือกว่าทุกคลาสเมื่อยังไม่มีหลักฐาน
+- บอกความสำเร็จและข้อจำกัดตามผลการทดลองจริง
+
+## สิ่งที่ฉันให้ความสำคัญมากที่สุด
+
+ฉันต้องการให้ **Final Multiclass Activation Map ของ SCSC มีลักษณะดีกว่า CSC เหมือน Figure 4 ใน Paper** คือการตอบสนองบริเวณวัตถุชัดเจนกว่า Background Noise น้อยกว่า และแยกคลาสได้ดีกว่า โดยต้องมีค่าการวัดผลยืนยัน ไม่ใช่เพียงภาพที่ดูดี
+
+พร้อมกันนั้นฉันต้องการผลการทดลอง **Figure 3, Figure 5, Figure 6, Table 1 และ Table 2** ตาม Paper โดยประยุกต์ทั้งหมดมาใช้กับ COCO Dataset และคลาส Person, Car, Motorcycle, Background ของเรา
+
+**ให้เริ่มจากการตรวจสอบไฟล์และแก้ปัญหาจริง จากนั้นรันการทดลอง สร้างผลลัพธ์ และส่ง ZIP โปรเจกต์ใหม่ที่ตรวจสอบได้ โดยไม่ต้องถามฉันซ้ำเกี่ยวกับข้อกำหนดที่ให้ไว้แล้ว**
+
+ชื่อ ZIP สุดท้าย:
+
+`SCSC_COCO_COMPLETE_PAPER_EXPERIMENTS_FINAL.zip`
