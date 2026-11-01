@@ -1,0 +1,1205 @@
+{
+ "schema": "coco_scsc.manifest.v2",
+ "seed": 42,
+ "categories": {
+  "1": "person",
+  "3": "car",
+  "4": "motorcycle"
+ },
+ "threshold_each_class_largest_noncrowd_instance_pct": 2.0,
+ "annotation_source": "instances_{train,val}2017.json from annotations_trainval2017.zip (md5 f4bbac642086de4f52a3fdda2de5fa2c, fetched from the official S3 bucket over verified HTTPS)",
+ "rule": "annotated category set EXACTLY {1,3,4} (crowd included); each class: largest non-crowd instance mask area >= 2 % of the original image area (separately per class)",
+ "selection": {
+  "val": "all 3 eligible val2017 images",
+  "train": "top 10 of 56 eligible train2017 candidates by balanced-coverage score, one image per date_captured",
+  "test": "5 seeded-random (seed 42) of the remaining eligible train2017 candidates, date_captured not used elsewhere; SEALED"
+ },
+ "candidate_counts": {
+  "train2017": {
+   "images": 118287,
+   "category_set_exactly_{1,3,4}": 221,
+   "\u2026and_each_class_has_largest_noncrowd_instance>=2%": 56
+  },
+  "val2017": {
+   "images": 5000,
+   "category_set_exactly_{1,3,4}": 6,
+   "\u2026and_each_class_has_largest_noncrowd_instance>=2%": 3
+  }
+ },
+ "train": [
+  {
+   "image_id": 326689,
+   "file_name": "000000326689.jpg",
+   "width": 640,
+   "height": 427,
+   "date_captured": "2013-11-15 16:18:16",
+   "flickr_url": "http://farm8.staticflickr.com/7005/6721496801_6fe6a55d6e_z.jpg",
+   "n_instances": 3,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 77558.81045,
+     "largest_pct": 28.380712254830215,
+     "total_sum_of_instances_px": 77558.81045,
+     "total_sum_pct": 28.380712254830215,
+     "largest_bbox_wh": [
+      328,
+      384
+     ],
+     "union_mask_pct": 28.51653981264637
+    },
+    "car": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 56689.20545,
+     "largest_pct": 20.74400082333138,
+     "total_sum_of_instances_px": 56689.20545,
+     "total_sum_pct": 20.74400082333138,
+     "largest_bbox_wh": [
+      638,
+      161
+     ],
+     "union_mask_pct": 20.942257025761123
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 121666.73670000001,
+     "largest_pct": 44.52090775029275,
+     "total_sum_of_instances_px": 121666.73670000001,
+     "total_sum_pct": 44.52090775029275,
+     "largest_bbox_wh": [
+      639,
+      395
+     ],
+     "union_mask_pct": 44.87595140515222
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000326689.jpg",
+   "path": "data/coco/images/train2017/000000326689.jpg",
+   "sha256": "f8ff4c2ac37d4088c9aab0fdb1bcd8f3ac734393f3151a31f95429ec501a00cf",
+   "bytes": 146464,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 377352,
+   "file_name": "000000377352.jpg",
+   "width": 640,
+   "height": 424,
+   "date_captured": "2013-11-15 20:03:42",
+   "flickr_url": "http://farm9.staticflickr.com/8023/7313860902_ac54ba0f48_z.jpg",
+   "n_instances": 8,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 3,
+     "n_crowd": 0,
+     "largest_area_px": 16962.36335,
+     "largest_pct": 6.250870927918632,
+     "total_sum_of_instances_px": 36015.213800000005,
+     "total_sum_pct": 13.272115934551888,
+     "largest_bbox_wh": [
+      165,
+      183
+     ],
+     "union_mask_pct": 13.517467570754716
+    },
+    "car": {
+     "n_noncrowd": 3,
+     "n_crowd": 0,
+     "largest_area_px": 40476.58575,
+     "largest_pct": 14.91619463074882,
+     "total_sum_of_instances_px": 62076.51575,
+     "total_sum_pct": 22.876074495135615,
+     "largest_bbox_wh": [
+      304,
+      212
+     ],
+     "union_mask_pct": 23.204967570754718
+    },
+    "motorcycle": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 30958.562349999986,
+     "largest_pct": 11.408668318838437,
+     "total_sum_of_instances_px": 60957.41179999999,
+     "total_sum_pct": 22.463668853183957,
+     "largest_bbox_wh": [
+      205,
+      269
+     ],
+     "union_mask_pct": 22.85930129716981
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000377352.jpg",
+   "path": "data/coco/images/train2017/000000377352.jpg",
+   "sha256": "a0009187a7a20fae6bebf66d83fceb40c5a6283873573a31fb980aa79d5879f3",
+   "bytes": 205209,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 508140,
+   "file_name": "000000508140.jpg",
+   "width": 640,
+   "height": 426,
+   "date_captured": "2013-11-15 21:34:38",
+   "flickr_url": "http://farm8.staticflickr.com/7030/6444977651_34430ecc34_z.jpg",
+   "n_instances": 12,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 7,
+     "n_crowd": 0,
+     "largest_area_px": 25269.85445,
+     "largest_pct": 9.268579243691313,
+     "total_sum_of_instances_px": 32738.149699999998,
+     "total_sum_pct": 12.007830729166665,
+     "largest_bbox_wh": [
+      158,
+      383
+     ],
+     "union_mask_pct": 12.25168720657277
+    },
+    "car": {
+     "n_noncrowd": 4,
+     "n_crowd": 0,
+     "largest_area_px": 23428.022450000004,
+     "largest_pct": 8.593024666226528,
+     "total_sum_of_instances_px": 61980.4485,
+     "total_sum_pct": 22.733439150528167,
+     "largest_bbox_wh": [
+      267,
+      154
+     ],
+     "union_mask_pct": 22.998459507042252
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 65443.63920000001,
+     "largest_pct": 24.003682218309862,
+     "total_sum_of_instances_px": 65443.63920000001,
+     "total_sum_pct": 24.003682218309862,
+     "largest_bbox_wh": [
+      518,
+      258
+     ],
+     "union_mask_pct": 24.2356220657277
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000508140.jpg",
+   "path": "data/coco/images/train2017/000000508140.jpg",
+   "sha256": "9f091b2e03175ad7ea6475cc3f4b19bba6d688351ec8ae5b252158e5c21fc922",
+   "bytes": 201631,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 453605,
+   "file_name": "000000453605.jpg",
+   "width": 424,
+   "height": 640,
+   "date_captured": "2013-11-15 09:22:11",
+   "flickr_url": "http://farm7.staticflickr.com/6187/6091624183_bbd0489a2b_z.jpg",
+   "n_instances": 8,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 61312.56335000001,
+     "largest_pct": 22.594547225088448,
+     "total_sum_of_instances_px": 61312.56335000001,
+     "total_sum_pct": 22.594547225088448,
+     "largest_bbox_wh": [
+      244,
+      590
+     ],
+     "union_mask_pct": 22.777122641509433
+    },
+    "car": {
+     "n_noncrowd": 6,
+     "n_crowd": 0,
+     "largest_area_px": 25431.9992,
+     "largest_pct": 9.372051591981132,
+     "total_sum_of_instances_px": 33488.755549999994,
+     "total_sum_pct": 12.341080317659195,
+     "largest_bbox_wh": [
+      176,
+      220
+     ],
+     "union_mask_pct": 12.404923349056604
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 87760.56205,
+     "largest_pct": 32.34100901017099,
+     "total_sum_of_instances_px": 87760.56205,
+     "total_sum_pct": 32.34100901017099,
+     "largest_bbox_wh": [
+      379,
+      427
+     ],
+     "union_mask_pct": 32.7233195754717
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000453605.jpg",
+   "path": "data/coco/images/train2017/000000453605.jpg",
+   "sha256": "df260742f151a51b8b71e2a9e14b7a9cc976e9d74d4fc7ee95587297709c625d",
+   "bytes": 298205,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 310553,
+   "file_name": "000000310553.jpg",
+   "width": 640,
+   "height": 427,
+   "date_captured": "2013-11-14 14:28:05",
+   "flickr_url": "http://farm3.staticflickr.com/2399/5756430609_68ec7e26e4_z.jpg",
+   "n_instances": 4,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 22592.16100000001,
+     "largest_pct": 8.267037836651058,
+     "total_sum_of_instances_px": 35958.77120000001,
+     "total_sum_pct": 13.158215456674476,
+     "largest_bbox_wh": [
+      139,
+      382
+     ],
+     "union_mask_pct": 13.301009953161593
+    },
+    "car": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 85433.95620000002,
+     "largest_pct": 31.262425424473072,
+     "total_sum_of_instances_px": 85433.95620000002,
+     "total_sum_pct": 31.262425424473072,
+     "largest_bbox_wh": [
+      640,
+      329
+     ],
+     "union_mask_pct": 31.59323770491803
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 86271.42125000003,
+     "largest_pct": 31.568874871926244,
+     "total_sum_of_instances_px": 86271.42125000003,
+     "total_sum_pct": 31.568874871926244,
+     "largest_bbox_wh": [
+      538,
+      349
+     ],
+     "union_mask_pct": 31.88231850117096
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000310553.jpg",
+   "path": "data/coco/images/train2017/000000310553.jpg",
+   "sha256": "36afc34b04566402403f441b09d708afc5311426f39e33312562407203d2a6f3",
+   "bytes": 119944,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 5205,
+   "file_name": "000000005205.jpg",
+   "width": 612,
+   "height": 612,
+   "date_captured": "2013-11-15 13:51:45",
+   "flickr_url": "http://farm9.staticflickr.com/8333/8146307715_815f82a56d_z.jpg",
+   "n_instances": 5,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 47566.8916,
+     "largest_pct": 12.699947562903157,
+     "total_sum_of_instances_px": 61210.086050000005,
+     "total_sum_pct": 16.342562168930755,
+     "largest_bbox_wh": [
+      314,
+      457
+     ],
+     "union_mask_pct": 16.458680422059892
+    },
+    "car": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 44929.15509999999,
+     "largest_pct": 11.995694791533168,
+     "total_sum_of_instances_px": 54420.240849999995,
+     "total_sum_pct": 14.529732381242255,
+     "largest_bbox_wh": [
+      405,
+      215
+     ],
+     "union_mask_pct": 14.653552052629331
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 118175.1808,
+     "largest_pct": 31.551748472809603,
+     "total_sum_of_instances_px": 118175.1808,
+     "total_sum_pct": 31.551748472809603,
+     "largest_bbox_wh": [
+      612,
+      364
+     ],
+     "union_mask_pct": 31.831507112648982
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000005205.jpg",
+   "path": "data/coco/images/train2017/000000005205.jpg",
+   "sha256": "d55dee071693217f70a3bc57f1f81b4cb51718ac67adb7f55f2296144757351d",
+   "bytes": 123691,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 515229,
+   "file_name": "000000515229.jpg",
+   "width": 425,
+   "height": 640,
+   "date_captured": "2013-11-15 14:22:25",
+   "flickr_url": "http://farm8.staticflickr.com/7150/6658429397_33762b8c02_z.jpg",
+   "n_instances": 7,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 54848.12895,
+     "largest_pct": 20.164753290441176,
+     "total_sum_of_instances_px": 54848.12895,
+     "total_sum_pct": 20.164753290441176,
+     "largest_bbox_wh": [
+      252,
+      540
+     ],
+     "union_mask_pct": 20.33823529411765
+    },
+    "car": {
+     "n_noncrowd": 3,
+     "n_crowd": 0,
+     "largest_area_px": 18187.78589999999,
+     "largest_pct": 6.686685992647056,
+     "total_sum_of_instances_px": 27364.04504999999,
+     "total_sum_pct": 10.060310680147055,
+     "largest_bbox_wh": [
+      194,
+      126
+     ],
+     "union_mask_pct": 10.201838235294117
+    },
+    "motorcycle": {
+     "n_noncrowd": 3,
+     "n_crowd": 0,
+     "largest_area_px": 77387.77330000004,
+     "largest_pct": 28.451387242647076,
+     "total_sum_of_instances_px": 96123.86525000005,
+     "total_sum_pct": 35.33965634191178,
+     "largest_bbox_wh": [
+      380,
+      397
+     ],
+     "union_mask_pct": 35.45073529411765
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000515229.jpg",
+   "path": "data/coco/images/train2017/000000515229.jpg",
+   "sha256": "c5c8e1fc2446c6b04d815489ee53be07f3ac9e081e45f08fa3b1d4044cbbce50",
+   "bytes": 181118,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 144597,
+   "file_name": "000000144597.jpg",
+   "width": 640,
+   "height": 480,
+   "date_captured": "2013-11-15 20:52:21",
+   "flickr_url": "http://farm8.staticflickr.com/7302/8734411064_80a2db1fbe_z.jpg",
+   "n_instances": 8,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 39671.06999999999,
+     "largest_pct": 12.913759765624997,
+     "total_sum_of_instances_px": 39671.06999999999,
+     "total_sum_pct": 12.913759765624997,
+     "largest_bbox_wh": [
+      265,
+      320
+     ],
+     "union_mask_pct": 13.040690104166666
+    },
+    "car": {
+     "n_noncrowd": 6,
+     "n_crowd": 0,
+     "largest_area_px": 42614.52345,
+     "largest_pct": 13.871915185546873,
+     "total_sum_of_instances_px": 60247.23745,
+     "total_sum_pct": 19.61173094075521,
+     "largest_bbox_wh": [
+      361,
+      182
+     ],
+     "union_mask_pct": 19.8017578125
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 39924.48380000001,
+     "largest_pct": 12.99625123697917,
+     "total_sum_of_instances_px": 39924.48380000001,
+     "total_sum_pct": 12.99625123697917,
+     "largest_bbox_wh": [
+      361,
+      285
+     ],
+     "union_mask_pct": 13.109375
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000144597.jpg",
+   "path": "data/coco/images/train2017/000000144597.jpg",
+   "sha256": "d2c871a8d67bed019a19ef440f2e1306c56275959edbd58d45b39a6d2af32d6b",
+   "bytes": 183780,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 274034,
+   "file_name": "000000274034.jpg",
+   "width": 427,
+   "height": 640,
+   "date_captured": "2013-11-15 21:17:01",
+   "flickr_url": "http://farm8.staticflickr.com/7031/6721496633_4c0f99e0f2_z.jpg",
+   "n_instances": 5,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 33496.40434999999,
+     "largest_pct": 12.257173722921543,
+     "total_sum_of_instances_px": 33496.40434999999,
+     "total_sum_pct": 12.257173722921543,
+     "largest_bbox_wh": [
+      207,
+      388
+     ],
+     "union_mask_pct": 12.410714285714286
+    },
+    "car": {
+     "n_noncrowd": 3,
+     "n_crowd": 0,
+     "largest_area_px": 28561.823700000004,
+     "largest_pct": 10.451487009660424,
+     "total_sum_of_instances_px": 41107.58455,
+     "total_sum_pct": 15.042295283225995,
+     "largest_bbox_wh": [
+      149,
+      277
+     ],
+     "union_mask_pct": 15.229435011709603
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 66146.83959999995,
+     "largest_pct": 24.204786153395766,
+     "total_sum_of_instances_px": 66146.83959999995,
+     "total_sum_pct": 24.204786153395766,
+     "largest_bbox_wh": [
+      345,
+      402
+     ],
+     "union_mask_pct": 24.502341920374707
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000274034.jpg",
+   "path": "data/coco/images/train2017/000000274034.jpg",
+   "sha256": "b746b8448cddbbedc63967acbc0b618b26762d50e33b0dc76b86812445ad7918",
+   "bytes": 169438,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 453799,
+   "file_name": "000000453799.jpg",
+   "width": 640,
+   "height": 512,
+   "date_captured": "2013-11-15 20:12:27",
+   "flickr_url": "http://farm9.staticflickr.com/8314/7976230458_ba10c3cc9a_z.jpg",
+   "n_instances": 8,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 31911.678400000004,
+     "largest_pct": 9.738671386718751,
+     "total_sum_of_instances_px": 31911.678400000004,
+     "total_sum_pct": 9.738671386718751,
+     "largest_bbox_wh": [
+      299,
+      346
+     ],
+     "union_mask_pct": 9.8895263671875
+    },
+    "car": {
+     "n_noncrowd": 6,
+     "n_crowd": 0,
+     "largest_area_px": 19848.022799999995,
+     "largest_pct": 6.057135864257811,
+     "total_sum_of_instances_px": 54394.769899999985,
+     "total_sum_pct": 16.599966400146478,
+     "largest_bbox_wh": [
+      242,
+      142
+     ],
+     "union_mask_pct": 16.68212890625
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 103286.38420000004,
+     "largest_pct": 31.52050299072267,
+     "total_sum_of_instances_px": 103286.38420000004,
+     "total_sum_pct": 31.52050299072267,
+     "largest_bbox_wh": [
+      599,
+      307
+     ],
+     "union_mask_pct": 31.759033203125
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000453799.jpg",
+   "path": "data/coco/images/train2017/000000453799.jpg",
+   "sha256": "7609285e7768ac837fa30f6148074987e3c1989b4f68e2063bf1663ce2d5804a",
+   "bytes": 282651,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  }
+ ],
+ "val": [
+  {
+   "image_id": 446651,
+   "file_name": "000000446651.jpg",
+   "width": 640,
+   "height": 426,
+   "date_captured": "2013-11-15 18:59:48",
+   "flickr_url": "http://farm9.staticflickr.com/8318/8000471504_6726c52ae2_z.jpg",
+   "n_instances": 5,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 3,
+     "n_crowd": 0,
+     "largest_area_px": 54603.03485000001,
+     "largest_pct": 20.027521585240613,
+     "total_sum_of_instances_px": 71498.92235000001,
+     "total_sum_pct": 26.224663420627937,
+     "largest_bbox_wh": [
+      347,
+      344
+     ],
+     "union_mask_pct": 26.497579225352112
+    },
+    "car": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 43351.26099999999,
+     "largest_pct": 15.90055054284037,
+     "total_sum_of_instances_px": 43351.26099999999,
+     "total_sum_pct": 15.90055054284037,
+     "largest_bbox_wh": [
+      223,
+      249
+     ],
+     "union_mask_pct": 15.971977699530516
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 14305.874350000004,
+     "largest_pct": 5.247166354900235,
+     "total_sum_of_instances_px": 14305.874350000004,
+     "total_sum_pct": 5.247166354900235,
+     "largest_bbox_wh": [
+      149,
+      190
+     ],
+     "union_mask_pct": 5.332306338028169
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000446651.jpg",
+   "path": "data/coco/images/val2017/000000446651.jpg",
+   "sha256": "68c8ba3c72603ed69835bf0f7be7f943daeadb12778a5fb0ab3606a3b0b79124",
+   "bytes": 148611,
+   "split_source": "val",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 230008,
+   "file_name": "000000230008.jpg",
+   "width": 640,
+   "height": 360,
+   "date_captured": "2013-11-15 16:38:21",
+   "flickr_url": "http://farm7.staticflickr.com/6040/6354716703_18487f986e_z.jpg",
+   "n_instances": 4,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 12692.64515,
+     "largest_pct": 5.50896056857639,
+     "total_sum_of_instances_px": 13527.795250000001,
+     "total_sum_pct": 5.871438910590278,
+     "largest_bbox_wh": [
+      77,
+      289
+     ],
+     "union_mask_pct": 6.008246527777778
+    },
+    "car": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 33780.49684999999,
+     "largest_pct": 14.661673980034717,
+     "total_sum_of_instances_px": 33780.49684999999,
+     "total_sum_pct": 14.661673980034717,
+     "largest_bbox_wh": [
+      206,
+      237
+     ],
+     "union_mask_pct": 14.77734375
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 51367.124149999996,
+     "largest_pct": 22.294758745659724,
+     "total_sum_of_instances_px": 51367.124149999996,
+     "total_sum_pct": 22.294758745659724,
+     "largest_bbox_wh": [
+      430,
+      268
+     ],
+     "union_mask_pct": 22.52126736111111
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000230008.jpg",
+   "path": "data/coco/images/val2017/000000230008.jpg",
+   "sha256": "71685782cd06160eb22c6b1bf4da9149374e41f878767c7bb1f5e41183c2d120",
+   "bytes": 221091,
+   "split_source": "val",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 68093,
+   "file_name": "000000068093.jpg",
+   "width": 640,
+   "height": 480,
+   "date_captured": "2013-11-15 12:39:06",
+   "flickr_url": "http://farm5.staticflickr.com/4120/4803479594_4fea166ab0_z.jpg",
+   "n_instances": 5,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 33047.5231,
+     "largest_pct": 10.757657259114584,
+     "total_sum_of_instances_px": 49814.54389999999,
+     "total_sum_pct": 16.21567184244791,
+     "largest_bbox_wh": [
+      192,
+      392
+     ],
+     "union_mask_pct": 16.359375
+    },
+    "car": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 10117.369649999997,
+     "largest_pct": 3.293414599609374,
+     "total_sum_of_instances_px": 10117.369649999997,
+     "total_sum_pct": 3.293414599609374,
+     "largest_bbox_wh": [
+      308,
+      110
+     ],
+     "union_mask_pct": 3.337890625
+    },
+    "motorcycle": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 93369.27275000003,
+     "largest_pct": 30.393643473307304,
+     "total_sum_of_instances_px": 105551.01675000004,
+     "total_sum_pct": 34.35905493164064,
+     "largest_bbox_wh": [
+      604,
+      363
+     ],
+     "union_mask_pct": 34.694010416666664
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/val2017/000000068093.jpg",
+   "path": "data/coco/images/val2017/000000068093.jpg",
+   "sha256": "c5f288d7a94cace0aa18389b07caaf48af32fc3a49a99a17794456a116016244",
+   "bytes": 284989,
+   "split_source": "val",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  }
+ ],
+ "test_sealed": [
+  {
+   "image_id": 452775,
+   "file_name": "000000452775.jpg",
+   "width": 640,
+   "height": 483,
+   "date_captured": "2013-11-14 13:56:29",
+   "flickr_url": "http://farm4.staticflickr.com/3239/2607278665_0bb344df2a_z.jpg",
+   "n_instances": 15,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 5,
+     "n_crowd": 0,
+     "largest_area_px": 15822.613249999993,
+     "largest_pct": 5.118599006858176,
+     "total_sum_of_instances_px": 17218.412599999996,
+     "total_sum_pct": 5.570138651656313,
+     "largest_bbox_wh": [
+      110,
+      285
+     ],
+     "union_mask_pct": 5.729166666666667
+    },
+    "car": {
+     "n_noncrowd": 9,
+     "n_crowd": 0,
+     "largest_area_px": 21764.07175,
+     "largest_pct": 7.04065468103002,
+     "total_sum_of_instances_px": 58601.57950000001,
+     "total_sum_pct": 18.95755030408903,
+     "largest_bbox_wh": [
+      200,
+      187
+     ],
+     "union_mask_pct": 18.965450310559007
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 23263.683200000003,
+     "largest_pct": 7.525777432712216,
+     "total_sum_of_instances_px": 23263.683200000003,
+     "total_sum_pct": 7.525777432712216,
+     "largest_bbox_wh": [
+      274,
+      171
+     ],
+     "union_mask_pct": 7.669513457556936
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000452775.jpg",
+   "path": "data/coco/images/train2017/000000452775.jpg",
+   "sha256": "20fbb926f677416a70ae59efb82e9db66305b44675d7c5812c8deed4fdddba65",
+   "bytes": 153614,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 496274,
+   "file_name": "000000496274.jpg",
+   "width": 640,
+   "height": 635,
+   "date_captured": "2013-11-15 19:19:48",
+   "flickr_url": "http://farm9.staticflickr.com/8147/7675580902_d3b19e90c6_z.jpg",
+   "n_instances": 6,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 27353.027750000005,
+     "largest_pct": 6.73056785187008,
+     "total_sum_of_instances_px": 27353.027750000005,
+     "total_sum_pct": 6.73056785187008,
+     "largest_bbox_wh": [
+      205,
+      239
+     ],
+     "union_mask_pct": 6.790846456692913
+    },
+    "car": {
+     "n_noncrowd": 4,
+     "n_crowd": 0,
+     "largest_area_px": 25125.248949999994,
+     "largest_pct": 6.182393934547243,
+     "total_sum_of_instances_px": 69426.2811,
+     "total_sum_pct": 17.083238459645667,
+     "largest_bbox_wh": [
+      387,
+      240
+     ],
+     "union_mask_pct": 15.47367125984252
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 98057.82410000001,
+     "largest_pct": 24.128401599409454,
+     "total_sum_of_instances_px": 98057.82410000001,
+     "total_sum_pct": 24.128401599409454,
+     "largest_bbox_wh": [
+      561,
+      384
+     ],
+     "union_mask_pct": 24.279773622047244
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000496274.jpg",
+   "path": "data/coco/images/train2017/000000496274.jpg",
+   "sha256": "16d7c1858788428f942a9b6a3b753f7764834b6c5cc514f83d1d18e5bf0aa8e7",
+   "bytes": 247506,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 580613,
+   "file_name": "000000580613.jpg",
+   "width": 640,
+   "height": 426,
+   "date_captured": "2013-11-15 14:04:09",
+   "flickr_url": "http://farm7.staticflickr.com/6192/6092816814_087e7d021e_z.jpg",
+   "n_instances": 18,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 12,
+     "n_crowd": 1,
+     "largest_area_px": 41351.03549999999,
+     "largest_pct": 15.16689975792253,
+     "total_sum_of_instances_px": 62734.82545,
+     "total_sum_pct": 23.010132574090374,
+     "largest_bbox_wh": [
+      280,
+      390
+     ],
+     "union_mask_pct": 23.389451291079812
+    },
+    "car": {
+     "n_noncrowd": 2,
+     "n_crowd": 0,
+     "largest_area_px": 8414.669100000001,
+     "largest_pct": 3.0863663072183103,
+     "total_sum_of_instances_px": 10488.19165,
+     "total_sum_pct": 3.8469012800762914,
+     "largest_bbox_wh": [
+      187,
+      109
+     ],
+     "union_mask_pct": 3.979973591549296
+    },
+    "motorcycle": {
+     "n_noncrowd": 4,
+     "n_crowd": 0,
+     "largest_area_px": 103592.57100000001,
+     "largest_pct": 37.99610145246479,
+     "total_sum_of_instances_px": 124058.67145000001,
+     "total_sum_pct": 45.502740408597425,
+     "largest_bbox_wh": [
+      614,
+      278
+     ],
+     "union_mask_pct": 45.76987969483568
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000580613.jpg",
+   "path": "data/coco/images/train2017/000000580613.jpg",
+   "sha256": "c61d230c61cb645aeb5aca13d0ec8373706c8983eb3e815ae39d7d96700a852b",
+   "bytes": 259075,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 376628,
+   "file_name": "000000376628.jpg",
+   "width": 640,
+   "height": 426,
+   "date_captured": "2013-11-14 14:43:50",
+   "flickr_url": "http://farm4.staticflickr.com/3278/2810286302_a2f3e8d3fc_z.jpg",
+   "n_instances": 21,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 12,
+     "n_crowd": 0,
+     "largest_area_px": 15158.328999999994,
+     "largest_pct": 5.559833113262909,
+     "total_sum_of_instances_px": 47728.00779999999,
+     "total_sum_pct": 17.50587140551643,
+     "largest_bbox_wh": [
+      109,
+      266
+     ],
+     "union_mask_pct": 17.917767018779344
+    },
+    "car": {
+     "n_noncrowd": 4,
+     "n_crowd": 0,
+     "largest_area_px": 7893.5811500000045,
+     "largest_pct": 2.895239564994133,
+     "total_sum_of_instances_px": 15492.662000000004,
+     "total_sum_pct": 5.68246112089202,
+     "largest_bbox_wh": [
+      133,
+      90
+     ],
+     "union_mask_pct": 5.756675469483568
+    },
+    "motorcycle": {
+     "n_noncrowd": 5,
+     "n_crowd": 0,
+     "largest_area_px": 21590.877950000002,
+     "largest_pct": 7.919189388937795,
+     "total_sum_of_instances_px": 27363.63495,
+     "total_sum_pct": 10.036544509242958,
+     "largest_bbox_wh": [
+      264,
+      139
+     ],
+     "union_mask_pct": 10.055017605633802
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000376628.jpg",
+   "path": "data/coco/images/train2017/000000376628.jpg",
+   "sha256": "bd82be3122821aaefb22a3846dc729ec599a9087f671cc131ccaef8a91481b60",
+   "bytes": 157112,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  },
+  {
+   "image_id": 428065,
+   "file_name": "000000428065.jpg",
+   "width": 640,
+   "height": 427,
+   "date_captured": "2013-11-15 13:24:06",
+   "flickr_url": "http://farm1.staticflickr.com/62/156345762_e85b8863f0_z.jpg",
+   "n_instances": 3,
+   "class_stats": {
+    "person": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 11275.159450000006,
+     "largest_pct": 4.125863381879394,
+     "total_sum_of_instances_px": 11275.159450000006,
+     "total_sum_pct": 4.125863381879394,
+     "largest_bbox_wh": [
+      211,
+      364
+     ],
+     "union_mask_pct": 4.289739461358314
+    },
+    "car": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 10766.555499999999,
+     "largest_pct": 3.9397524516978915,
+     "total_sum_of_instances_px": 10766.555499999999,
+     "total_sum_pct": 3.9397524516978915,
+     "largest_bbox_wh": [
+      123,
+      108
+     ],
+     "union_mask_pct": 3.9984631147540983
+    },
+    "motorcycle": {
+     "n_noncrowd": 1,
+     "n_crowd": 0,
+     "largest_area_px": 99512.04320000001,
+     "largest_pct": 36.41395023419204,
+     "total_sum_of_instances_px": 99512.04320000001,
+     "total_sum_pct": 36.41395023419204,
+     "largest_bbox_wh": [
+      407,
+      421
+     ],
+     "union_mask_pct": 36.66678864168618
+    }
+   },
+   "annotated_category_ids": [
+    1,
+    3,
+    4
+   ],
+   "url": "https://s3.amazonaws.com/images.cocodataset.org/train2017/000000428065.jpg",
+   "path": "data/coco/images/train2017/000000428065.jpg",
+   "sha256": "e6989a77fba5d2618c64c4adb295d82e2f4d39cc93f49e4a0e8e2399d06b096a",
+   "bytes": 123188,
+   "split_source": "train",
+   "verified": {
+    "annotated_category_ids_exactly_1_3_4_incl_crowd": true,
+    "polygons_inside_image": true,
+    "no_other_instance_categories": true
+   }
+  }
+ ]
+}
