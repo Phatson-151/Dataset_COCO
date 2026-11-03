@@ -1,3 +1,7 @@
+# Current branch: SCSC COCO v2
+
+See [README_V2.md](README_V2.md) and [the new Thai report](final%20output/FINAL_REPORT_TH.md). The material below describes the historical native pipeline; it is not the v2 reproduction command or evidence for v2 results.
+
 # SCSC COCO — new experiments
 
 The new development and experiment workflow is documented in

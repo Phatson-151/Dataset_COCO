@@ -1,0 +1,1958 @@
+{
+  "id": "K4_g0.2_N10_beta005",
+  "config": {
+    "seed": 42,
+    "tile": 64,
+    "stride": 44,
+    "tiles_per_image": 12,
+    "filter_size": 11,
+    "points": 128,
+    "beta": 0.005,
+    "alpha": 1.0,
+    "outer": 30,
+    "max_admm": 160,
+    "eval_admm": 160,
+    "tol": 0.003,
+    "adaptive": false,
+    "solver": "fista",
+    "loss": "softmax",
+    "feature": "signed_energy_rgb",
+    "task_steps": 24,
+    "task_lr": 0.003,
+    "K": 4,
+    "gamma": 0.2,
+    "N": 10,
+    "variant": "beta005"
+  },
+  "split": "val",
+  "aggregate": {
+    "confusion_gt_rows_pred_cols": [
+      [
+        19504,
+        19602,
+        18625,
+        75408
+      ],
+      [
+        3752,
+        9670,
+        2056,
+        70785
+      ],
+      [
+        14812,
+        9038,
+        40047,
+        106790
+      ],
+      [
+        5759,
+        7351,
+        37119,
+        368361
+      ]
+    ],
+    "normalized_confusion": [
+      [
+        0.146493514297088,
+        0.14722958712323211,
+        0.13989139170340772,
+        0.5663855068762722
+      ],
+      [
+        0.04349489352329504,
+        0.11209904594090166,
+        0.023834088775025214,
+        0.8205719717607781
+      ],
+      [
+        0.08677872362863018,
+        0.052950722667807155,
+        0.23462243756114995,
+        0.6256481161424127
+      ],
+      [
+        0.013758092644353664,
+        0.017561336869012636,
+        0.08867627033612843,
+        0.8800043001505052
+      ]
+    ],
+    "per_class": {
+      "Person": {
+        "precision": 0.44502247473018913,
+        "recall": 0.146493514297088,
+        "f1": 0.22042652260886272,
+        "iou": 0.12386480547687696,
+        "tp": 19504,
+        "fp": 24323,
+        "fn": 113635,
+        "support": 133139,
+        "predicted": 43827
+      },
+      "Car": {
+        "precision": 0.21177810385230283,
+        "recall": 0.11209904594090166,
+        "f1": 0.14659955732088173,
+        "iou": 0.07909761643790796,
+        "tp": 9670,
+        "fp": 35991,
+        "fn": 76593,
+        "support": 86263,
+        "predicted": 45661
+      },
+      "Motorcycle": {
+        "precision": 0.40928183797152695,
+        "recall": 0.23462243756114995,
+        "f1": 0.29826390699129346,
+        "iou": 0.17527036549125333,
+        "tp": 40047,
+        "fp": 57800,
+        "fn": 130640,
+        "support": 170687,
+        "predicted": 97847
+      },
+      "Background": {
+        "precision": 0.5928455090899727,
+        "recall": 0.8800043001505052,
+        "f1": 0.7084314966142082,
+        "iou": 0.5485047790783727,
+        "tp": 368361,
+        "fp": 252983,
+        "fn": 50229,
+        "support": 418590,
+        "predicted": 621344
+      }
+    },
+    "foreground_mIoU": 0.12607759580201275,
+    "all_class_mIoU": 0.23168439162110274,
+    "pixel_accuracy": 0.5411071636582624,
+    "class_confusion_rate": 0.4588928363417376,
+    "foreground_class_confusion_rate": 0.17402438930603017,
+    "background_FPR": 0.11999569984949474,
+    "pooled_pixel_AP": {
+      "Person": 0.3177195259544475,
+      "Car": 0.20185010629164915,
+      "Motorcycle": 0.33898031499519554,
+      "Background": 0.8182459709206047
+    },
+    "macro_AP_foreground": 0.2861833157470974,
+    "macro_AP_all_classes": 0.41919897954047425,
+    "PSNR_db_mean_image": 47.80794100118883,
+    "SSIM_mean_image": 0.996326496294801,
+    "relative_reconstruction_error_mean_image": 0.00994184147566557,
+    "class_PSNR_db_mean_image": {
+      "Person": 47.78254869813825,
+      "Car": 48.804644197092024,
+      "Motorcycle": 47.91887351668506,
+      "Background": 47.710795518437244
+    }
+  },
+  "per_image": [
+    {
+      "confusion_gt_rows_pred_cols": [
+        [
+          7945,
+          6420,
+          12693,
+          44290
+        ],
+        [
+          601,
+          1469,
+          430,
+          40870
+        ],
+        [
+          841,
+          3818,
+          560,
+          8902
+        ],
+        [
+          3052,
+          6147,
+          2214,
+          132207
+        ]
+      ],
+      "normalized_confusion": [
+        [
+          0.11135560912709537,
+          0.08998149913101978,
+          0.17790267421651623,
+          0.6207602175253686
+        ],
+        [
+          0.013857505187917916,
+          0.033871339635692874,
+          0.009914687572054416,
+          0.9423564676043348
+        ],
+        [
+          0.059556688619786136,
+          0.27037745202181146,
+          0.039657248070249985,
+          0.6304086112881524
+        ],
+        [
+          0.021250522211391173,
+          0.04280044562038713,
+          0.015415680267372233,
+          0.9205333519008495
+        ]
+      ],
+      "per_class": {
+        "Person": {
+          "precision": 0.638716938660664,
+          "recall": 0.11135560912709537,
+          "f1": 0.18964755869048897,
+          "iou": 0.10475725851111521,
+          "tp": 7945,
+          "fp": 4494,
+          "fn": 63403,
+          "support": 71348,
+          "predicted": 12439
+        },
+        "Car": {
+          "precision": 0.08227848101265822,
+          "recall": 0.033871339635692874,
+          "f1": 0.04798771723507121,
+          "iou": 0.024583716843778764,
+          "tp": 1469,
+          "fp": 16385,
+          "fn": 41901,
+          "support": 43370,
+          "predicted": 17854
+        },
+        "Motorcycle": {
+          "precision": 0.03522677234698371,
+          "recall": 0.039657248070249985,
+          "f1": 0.03731094676527417,
+          "iou": 0.01901011609749474,
+          "tp": 560,
+          "fp": 15337,
+          "fn": 13561,
+          "support": 14121,
+          "predicted": 15897
+        },
+        "Background": {
+          "precision": 0.5842912639380561,
+          "recall": 0.9205333519008495,
+          "f1": 0.7148468864983819,
+          "iou": 0.5562348011208254,
+          "tp": 132207,
+          "fp": 94062,
+          "fn": 11413,
+          "support": 143620,
+          "predicted": 226269
+        }
+      },
+      "foreground_mIoU": 0.0494503638174629,
+      "all_class_mIoU": 0.1761464731433035,
+      "pixel_accuracy": 0.5218436535405327,
+      "class_confusion_rate": 0.47815634645946725,
+      "foreground_class_confusion_rate": 0.1925115842252734,
+      "background_FPR": 0.07946664809915054,
+      "image_id": 446651,
+      "native_shape": [
+        426,
+        640
+      ],
+      "ap": {
+        "Person": 0.5475573902125019,
+        "Car": 0.169979637587098,
+        "Motorcycle": 0.056108017261533305,
+        "Background": 0.7785422750582208
+      },
+      "macro_ap_foreground": 0.2578816816870444,
+      "PSNR_db": 48.70560937646947,
+      "class_PSNR_db": {
+        "Person": 47.7977412191773,
+        "Car": 50.050115164363746,
+        "Motorcycle": 48.90869419031901,
+        "Background": 48.842986578018916
+      },
+      "SSIM": 0.9925369732385196,
+      "relative_reconstruction_error": 0.010613893158733845,
+      "encode": {
+        "tile_count": 150,
+        "batch_count": 10,
+        "converged_batches": 10,
+        "min_weight": 1.062194314727094e-05,
+        "batches": [
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 40,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 12.280426025390625,
+                "mapping_norm": 0.754922091960907,
+                "mapping_tolerance": 0.004305377125740051,
+                "L": 11.046493530273438,
+                "primal_relative": 175.3440105043396,
+                "dual_relative_proxy": 175.3440105043396
+              },
+              {
+                "iter": 10,
+                "objective": 3.7079358100891113,
+                "mapping_norm": 0.04007308557629585,
+                "mapping_tolerance": 0.010535367250442506,
+                "L": 11.046493530273438,
+                "primal_relative": 3.803672394487502,
+                "dual_relative_proxy": 3.803672394487502
+              },
+              {
+                "iter": 20,
+                "objective": 3.355557918548584,
+                "mapping_norm": 0.019860753789544106,
+                "mapping_tolerance": 0.01163501214981079,
+                "L": 11.046493530273438,
+                "primal_relative": 1.7069817834154202,
+                "dual_relative_proxy": 1.7069817834154202
+              },
+              {
+                "iter": 30,
+                "objective": 3.2089407444000244,
+                "mapping_norm": 0.01291042473167181,
+                "mapping_tolerance": 0.01269457197189331,
+                "L": 11.046493530273438,
+                "primal_relative": 1.0170035476782056,
+                "dual_relative_proxy": 1.0170035476782056
+              },
+              {
+                "iter": 40,
+                "objective": 3.139178514480591,
+                "mapping_norm": 0.009073909372091293,
+                "mapping_tolerance": 0.01355956220626831,
+                "L": 11.046493530273438,
+                "primal_relative": 0.6691889630401643,
+                "dual_relative_proxy": 0.6691889630401643
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.11397461200022008
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 9.897239685058594,
+                "mapping_norm": 0.6608789563179016,
+                "mapping_tolerance": 0.003946114897727966,
+                "L": 11.046493530273438,
+                "primal_relative": 167.47585243866376,
+                "dual_relative_proxy": 167.47585243866376
+              },
+              {
+                "iter": 10,
+                "objective": 3.2958550453186035,
+                "mapping_norm": 0.03670775517821312,
+                "mapping_tolerance": 0.009403821945190429,
+                "L": 11.046493530273438,
+                "primal_relative": 3.9034932171368095,
+                "dual_relative_proxy": 3.9034932171368095
+              },
+              {
+                "iter": 20,
+                "objective": 3.011244297027588,
+                "mapping_norm": 0.01750962994992733,
+                "mapping_tolerance": 0.010398519515991212,
+                "L": 11.046493530273438,
+                "primal_relative": 1.6838579687233746,
+                "dual_relative_proxy": 1.6838579687233746
+              },
+              {
+                "iter": 30,
+                "objective": 2.9001286029815674,
+                "mapping_norm": 0.011068734340369701,
+                "mapping_tolerance": 0.0113218252658844,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9776457488460516,
+                "dual_relative_proxy": 0.9776457488460516
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.10837777200003984
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 20.72966957092285,
+                "mapping_norm": 0.9890710711479187,
+                "mapping_tolerance": 0.0057633032798767095,
+                "L": 11.046493530273438,
+                "primal_relative": 171.61530863756266,
+                "dual_relative_proxy": 171.61530863756266
+              },
+              {
+                "iter": 10,
+                "objective": 5.332298755645752,
+                "mapping_norm": 0.05093822628259659,
+                "mapping_tolerance": 0.014306608200073243,
+                "L": 11.046493530273438,
+                "primal_relative": 3.5604683912666184,
+                "dual_relative_proxy": 3.5604683912666184
+              },
+              {
+                "iter": 20,
+                "objective": 4.790766716003418,
+                "mapping_norm": 0.02522471360862255,
+                "mapping_tolerance": 0.015501999378204345,
+                "L": 11.046493530273438,
+                "primal_relative": 1.627190983124941,
+                "dual_relative_proxy": 1.627190983124941
+              },
+              {
+                "iter": 30,
+                "objective": 4.560503005981445,
+                "mapping_norm": 0.016433613374829292,
+                "mapping_tolerance": 0.016764608860015868,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9802562953928492,
+                "dual_relative_proxy": 0.9802562953928492
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.13009497900020506
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 44.26426696777344,
+                "mapping_norm": 1.4841891527175903,
+                "mapping_tolerance": 0.008564738273620606,
+                "L": 11.046493530273438,
+                "primal_relative": 173.2906605317868,
+                "dual_relative_proxy": 173.2906605317868
+              },
+              {
+                "iter": 10,
+                "objective": 8.499825477600098,
+                "mapping_norm": 0.06708754599094391,
+                "mapping_tolerance": 0.021929715156555177,
+                "L": 11.046493530273438,
+                "primal_relative": 3.059207359147584,
+                "dual_relative_proxy": 3.059207359147584
+              },
+              {
+                "iter": 20,
+                "objective": 7.599193572998047,
+                "mapping_norm": 0.03428828716278076,
+                "mapping_tolerance": 0.02312702178955078,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4826071197058692,
+                "dual_relative_proxy": 1.4826071197058692
+              },
+              {
+                "iter": 30,
+                "objective": 7.177557945251465,
+                "mapping_norm": 0.023580510169267654,
+                "mapping_tolerance": 0.024674240112304686,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9556732066293054,
+                "dual_relative_proxy": 0.9556732066293054
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.13716988699979993
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 32.18754196166992,
+                "mapping_norm": 1.2743935585021973,
+                "mapping_tolerance": 0.007644456624984741,
+                "L": 11.046493530273438,
+                "primal_relative": 166.70819405751303,
+                "dual_relative_proxy": 166.70819405751303
+              },
+              {
+                "iter": 10,
+                "objective": 6.6692633628845215,
+                "mapping_norm": 0.05974055081605911,
+                "mapping_tolerance": 0.018699252605438234,
+                "L": 11.046493530273438,
+                "primal_relative": 3.194809550767018,
+                "dual_relative_proxy": 3.194809550767018
+              },
+              {
+                "iter": 20,
+                "objective": 5.954516410827637,
+                "mapping_norm": 0.029939860105514526,
+                "mapping_tolerance": 0.01986151170730591,
+                "L": 11.046493530273438,
+                "primal_relative": 1.50743108312855,
+                "dual_relative_proxy": 1.50743108312855
+              },
+              {
+                "iter": 30,
+                "objective": 5.631890296936035,
+                "mapping_norm": 0.020178217440843582,
+                "mapping_tolerance": 0.021240832328796387,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9499730108733918,
+                "dual_relative_proxy": 0.9499730108733918
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.13628758400000152
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 46.17531967163086,
+                "mapping_norm": 1.4874320030212402,
+                "mapping_tolerance": 0.008234549760818482,
+                "L": 11.046493530273438,
+                "primal_relative": 180.63306995832585,
+                "dual_relative_proxy": 180.63306995832585
+              },
+              {
+                "iter": 10,
+                "objective": 7.72047758102417,
+                "mapping_norm": 0.06628275662660599,
+                "mapping_tolerance": 0.022778886795043946,
+                "L": 11.046493530273438,
+                "primal_relative": 2.9098330055807327,
+                "dual_relative_proxy": 2.9098330055807327
+              },
+              {
+                "iter": 20,
+                "objective": 6.900562763214111,
+                "mapping_norm": 0.033455487340688705,
+                "mapping_tolerance": 0.023707144260406494,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4111985388540873,
+                "dual_relative_proxy": 1.4111985388540873
+              },
+              {
+                "iter": 30,
+                "objective": 6.494430065155029,
+                "mapping_norm": 0.023663893342018127,
+                "mapping_tolerance": 0.02518356800079346,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9396561019976418,
+                "dual_relative_proxy": 0.9396561019976418
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.1422336529999484
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 53.450016021728516,
+                "mapping_norm": 1.6308101415634155,
+                "mapping_tolerance": 0.009084182024002076,
+                "L": 11.046493530273438,
+                "primal_relative": 179.52195775629724,
+                "dual_relative_proxy": 179.52195775629724
+              },
+              {
+                "iter": 10,
+                "objective": 8.889391899108887,
+                "mapping_norm": 0.06957624107599258,
+                "mapping_tolerance": 0.024425265312194824,
+                "L": 11.046493530273438,
+                "primal_relative": 2.8485357348914935,
+                "dual_relative_proxy": 2.8485357348914935
+              },
+              {
+                "iter": 20,
+                "objective": 7.952410697937012,
+                "mapping_norm": 0.03628365322947502,
+                "mapping_tolerance": 0.02546159076690674,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4250348126965449,
+                "dual_relative_proxy": 1.4250348126965449
+              },
+              {
+                "iter": 30,
+                "objective": 7.478046417236328,
+                "mapping_norm": 0.025666775181889534,
+                "mapping_tolerance": 0.027047381401062012,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9489560117225149,
+                "dual_relative_proxy": 0.9489560117225149
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.1398779569999533
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 46.533355712890625,
+                "mapping_norm": 1.53373122215271,
+                "mapping_tolerance": 0.00878579592704773,
+                "L": 11.046493530273438,
+                "primal_relative": 174.56941122784377,
+                "dual_relative_proxy": 174.56941122784377
+              },
+              {
+                "iter": 10,
+                "objective": 8.303414344787598,
+                "mapping_norm": 0.06753695756196976,
+                "mapping_tolerance": 0.022569984912872314,
+                "L": 11.046493530273438,
+                "primal_relative": 2.992335077878208,
+                "dual_relative_proxy": 2.992335077878208
+              },
+              {
+                "iter": 20,
+                "objective": 7.401666641235352,
+                "mapping_norm": 0.03449330851435661,
+                "mapping_tolerance": 0.023709952354431154,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4548029451400462,
+                "dual_relative_proxy": 1.4548029451400462
+              },
+              {
+                "iter": 30,
+                "objective": 6.965152263641357,
+                "mapping_norm": 0.0242292582988739,
+                "mapping_tolerance": 0.025275009155273438,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9586251047437762,
+                "dual_relative_proxy": 0.9586251047437762
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.113085817999945
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 40.323707580566406,
+                "mapping_norm": 1.423362135887146,
+                "mapping_tolerance": 0.008548851013183595,
+                "L": 11.046493530273438,
+                "primal_relative": 166.49747828007656,
+                "dual_relative_proxy": 166.49747828007656
+              },
+              {
+                "iter": 10,
+                "objective": 8.496370315551758,
+                "mapping_norm": 0.06696194410324097,
+                "mapping_tolerance": 0.020839452266693117,
+                "L": 11.046493530273438,
+                "primal_relative": 3.213229563152369,
+                "dual_relative_proxy": 3.213229563152369
+              },
+              {
+                "iter": 20,
+                "objective": 7.576695919036865,
+                "mapping_norm": 0.0344671756029129,
+                "mapping_tolerance": 0.02217018127441406,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5546636798450733,
+                "dual_relative_proxy": 1.5546636798450733
+              },
+              {
+                "iter": 30,
+                "objective": 7.130870342254639,
+                "mapping_norm": 0.023764589801430702,
+                "mapping_tolerance": 0.023862590789794923,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9958931119748267,
+                "dual_relative_proxy": 0.9958931119748267
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09684449099995618
+          },
+          {
+            "batch_size": 6,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 15.882881164550781,
+                "mapping_norm": 0.9067498445510864,
+                "mapping_tolerance": 0.005503463387489319,
+                "L": 11.046493530273438,
+                "primal_relative": 164.75985769476443,
+                "dual_relative_proxy": 164.75985769476443
+              },
+              {
+                "iter": 10,
+                "objective": 3.3545193672180176,
+                "mapping_norm": 0.04213288053870201,
+                "mapping_tolerance": 0.013058727264404298,
+                "L": 11.046493530273438,
+                "primal_relative": 3.226415536952712,
+                "dual_relative_proxy": 3.226415536952712
+              },
+              {
+                "iter": 20,
+                "objective": 2.979374647140503,
+                "mapping_norm": 0.02167658880352974,
+                "mapping_tolerance": 0.013945634365081788,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5543637697690786,
+                "dual_relative_proxy": 1.5543637697690786
+              },
+              {
+                "iter": 30,
+                "objective": 2.809911012649536,
+                "mapping_norm": 0.014335310086607933,
+                "mapping_tolerance": 0.014971800327301025,
+                "L": 11.046493530273438,
+                "primal_relative": 0.957487394516446,
+                "dual_relative_proxy": 0.957487394516446
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.039053824999882636
+          }
+        ]
+      }
+    },
+    {
+      "confusion_gt_rows_pred_cols": [
+        [
+          6450,
+          13,
+          1698,
+          4518
+        ],
+        [
+          3023,
+          8199,
+          640,
+          21095
+        ],
+        [
+          10119,
+          4466,
+          15067,
+          21704
+        ],
+        [
+          2369,
+          1055,
+          33134,
+          96018
+        ]
+      ],
+      "normalized_confusion": [
+        [
+          0.5087151983594921,
+          0.001025317454057891,
+          0.13392223361463837,
+          0.35633725057181165
+        ],
+        [
+          0.0917255818187335,
+          0.2487787116545802,
+          0.019419243256364353,
+          0.640076463270322
+        ],
+        [
+          0.19703637354934184,
+          0.08696160137082327,
+          0.2933834410779656,
+          0.4226185840018693
+        ],
+        [
+          0.01786899589669322,
+          0.007957699734491914,
+          0.2499245715664977,
+          0.7242487328023172
+        ]
+      ],
+      "per_class": {
+        "Person": {
+          "precision": 0.2937024725650016,
+          "recall": 0.5087151983594921,
+          "f1": 0.37240184757505773,
+          "iou": 0.22880454061724015,
+          "tp": 6450,
+          "fp": 15511,
+          "fn": 6229,
+          "support": 12679,
+          "predicted": 21961
+        },
+        "Car": {
+          "precision": 0.5970290541032549,
+          "recall": 0.2487787116545802,
+          "f1": 0.35121010923109874,
+          "iou": 0.21301083370138474,
+          "tp": 8199,
+          "fp": 5534,
+          "fn": 24758,
+          "support": 32957,
+          "predicted": 13733
+        },
+        "Motorcycle": {
+          "precision": 0.29812619956864994,
+          "recall": 0.2933834410779656,
+          "f1": 0.29573580646744196,
+          "iou": 0.1735269728658958,
+          "tp": 15067,
+          "fp": 35472,
+          "fn": 36289,
+          "support": 51356,
+          "predicted": 50539
+        },
+        "Background": {
+          "precision": 0.6698852338926291,
+          "recall": 0.7242487328023172,
+          "f1": 0.6960070457502601,
+          "iou": 0.5337506184231737,
+          "tp": 96018,
+          "fp": 47317,
+          "fn": 36558,
+          "support": 132576,
+          "predicted": 143335
+        }
+      },
+      "foreground_mIoU": 0.2051141157281736,
+      "all_class_mIoU": 0.2872732414019236,
+      "pixel_accuracy": 0.5476982854753276,
+      "class_confusion_rate": 0.4523017145246724,
+      "foreground_class_confusion_rate": 0.2057798581326295,
+      "background_FPR": 0.27575126719768284,
+      "image_id": 230008,
+      "native_shape": [
+        360,
+        640
+      ],
+      "ap": {
+        "Person": 0.24705142565178023,
+        "Car": 0.47802081432341903,
+        "Motorcycle": 0.23660747735929208,
+        "Background": 0.8577301091986416
+      },
+      "macro_ap_foreground": 0.3205599057781638,
+      "PSNR_db": 47.10941574712804,
+      "class_PSNR_db": {
+        "Person": 47.581791250516325,
+        "Car": 48.3985949200371,
+        "Motorcycle": 47.40129095983302,
+        "Background": 46.69854880414807
+      },
+      "SSIM": 0.9985338917663398,
+      "relative_reconstruction_error": 0.010255048051476479,
+      "encode": {
+        "tile_count": 120,
+        "batch_count": 8,
+        "converged_batches": 8,
+        "min_weight": 1.062194314727094e-05,
+        "batches": [
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 171.416748046875,
+                "mapping_norm": 2.8834073543548584,
+                "mapping_tolerance": 0.015947766780853273,
+                "L": 11.046493530273438,
+                "primal_relative": 180.8032054880968,
+                "dual_relative_proxy": 180.8032054880968
+              },
+              {
+                "iter": 10,
+                "objective": 25.946928024291992,
+                "mapping_norm": 0.12307903915643692,
+                "mapping_tolerance": 0.044348310470581055,
+                "L": 11.046493530273438,
+                "primal_relative": 2.7752813545869524,
+                "dual_relative_proxy": 2.7752813545869524
+              },
+              {
+                "iter": 20,
+                "objective": 23.07701301574707,
+                "mapping_norm": 0.06581674516201019,
+                "mapping_tolerance": 0.04593479347229004,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4328298918272888,
+                "dual_relative_proxy": 1.4328298918272888
+              },
+              {
+                "iter": 30,
+                "objective": 21.496273040771484,
+                "mapping_norm": 0.04828556999564171,
+                "mapping_tolerance": 0.048821239471435546,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9890279419041123,
+                "dual_relative_proxy": 0.9890279419041123
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.1419884879996971
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 169.63400268554688,
+                "mapping_norm": 2.8336362838745117,
+                "mapping_tolerance": 0.015458843708038331,
+                "L": 11.046493530273438,
+                "primal_relative": 183.30195565668797,
+                "dual_relative_proxy": 183.30195565668797
+              },
+              {
+                "iter": 10,
+                "objective": 25.22268295288086,
+                "mapping_norm": 0.1233765259385109,
+                "mapping_tolerance": 0.04429388236999512,
+                "L": 11.046493530273438,
+                "primal_relative": 2.7854078111266833,
+                "dual_relative_proxy": 2.7854078111266833
+              },
+              {
+                "iter": 20,
+                "objective": 22.436979293823242,
+                "mapping_norm": 0.06462481617927551,
+                "mapping_tolerance": 0.04576289176940918,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4121663575131596,
+                "dual_relative_proxy": 1.4121663575131596
+              },
+              {
+                "iter": 30,
+                "objective": 20.916250228881836,
+                "mapping_norm": 0.047340236604213715,
+                "mapping_tolerance": 0.04856570434570313,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9747668080181393,
+                "dual_relative_proxy": 0.9747668080181393
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.1486886030002097
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 156.28262329101562,
+                "mapping_norm": 2.7242846488952637,
+                "mapping_tolerance": 0.014974778652191163,
+                "L": 11.046493530273438,
+                "primal_relative": 181.9248692865745,
+                "dual_relative_proxy": 181.9248692865745
+              },
+              {
+                "iter": 10,
+                "objective": 23.714580535888672,
+                "mapping_norm": 0.11928857862949371,
+                "mapping_tolerance": 0.04241902542114258,
+                "L": 11.046493530273438,
+                "primal_relative": 2.812148026626695,
+                "dual_relative_proxy": 2.812148026626695
+              },
+              {
+                "iter": 20,
+                "objective": 21.082250595092773,
+                "mapping_norm": 0.06273743510246277,
+                "mapping_tolerance": 0.04390769863128662,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4288481760180192,
+                "dual_relative_proxy": 1.4288481760180192
+              },
+              {
+                "iter": 30,
+                "objective": 19.659988403320312,
+                "mapping_norm": 0.04562754184007645,
+                "mapping_tolerance": 0.04663315773010254,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9784356037854809,
+                "dual_relative_proxy": 0.9784356037854809
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.13702359499984595
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 124.5877914428711,
+                "mapping_norm": 2.458707094192505,
+                "mapping_tolerance": 0.013899969577789308,
+                "L": 11.046493530273438,
+                "primal_relative": 176.88578960066653,
+                "dual_relative_proxy": 176.88578960066653
+              },
+              {
+                "iter": 10,
+                "objective": 19.237524032592773,
+                "mapping_norm": 0.10734142363071442,
+                "mapping_tolerance": 0.037902711868286136,
+                "L": 11.046493530273438,
+                "primal_relative": 2.832024895836777,
+                "dual_relative_proxy": 2.832024895836777
+              },
+              {
+                "iter": 20,
+                "objective": 17.08965492248535,
+                "mapping_norm": 0.05579962953925133,
+                "mapping_tolerance": 0.039322388648986815,
+                "L": 11.046493530273438,
+                "primal_relative": 1.419029500912302,
+                "dual_relative_proxy": 1.419029500912302
+              },
+              {
+                "iter": 30,
+                "objective": 15.95564079284668,
+                "mapping_norm": 0.04040762037038803,
+                "mapping_tolerance": 0.04175378322601318,
+                "L": 11.046493530273438,
+                "primal_relative": 0.967759499819732,
+                "dual_relative_proxy": 0.967759499819732
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.10543644600011248
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 109.57633972167969,
+                "mapping_norm": 2.376544713973999,
+                "mapping_tolerance": 0.013781264305114746,
+                "L": 11.046493530273438,
+                "primal_relative": 172.44750999311245,
+                "dual_relative_proxy": 172.44750999311245
+              },
+              {
+                "iter": 10,
+                "objective": 17.246702194213867,
+                "mapping_norm": 0.09934721887111664,
+                "mapping_tolerance": 0.035369836807250976,
+                "L": 11.046493530273438,
+                "primal_relative": 2.8088119097781648,
+                "dual_relative_proxy": 2.8088119097781648
+              },
+              {
+                "iter": 20,
+                "objective": 15.324263572692871,
+                "mapping_norm": 0.052826859056949615,
+                "mapping_tolerance": 0.03681009864807129,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4351186494230583,
+                "dual_relative_proxy": 1.4351186494230583
+              },
+              {
+                "iter": 30,
+                "objective": 14.319579124450684,
+                "mapping_norm": 0.03770938515663147,
+                "mapping_tolerance": 0.039101803779602054,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9643899132935407,
+                "dual_relative_proxy": 0.9643899132935407
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.10562279400028274
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 142.6219940185547,
+                "mapping_norm": 2.80148983001709,
+                "mapping_tolerance": 0.01711397409439087,
+                "L": 11.046493530273438,
+                "primal_relative": 163.69604246013685,
+                "dual_relative_proxy": 163.69604246013685
+              },
+              {
+                "iter": 10,
+                "objective": 20.990251541137695,
+                "mapping_norm": 0.10589594393968582,
+                "mapping_tolerance": 0.04091650485992432,
+                "L": 11.046493530273438,
+                "primal_relative": 2.5880984776733857,
+                "dual_relative_proxy": 2.5880984776733857
+              },
+              {
+                "iter": 20,
+                "objective": 18.711383819580078,
+                "mapping_norm": 0.058435484766960144,
+                "mapping_tolerance": 0.042384286880493165,
+                "L": 11.046493530273438,
+                "primal_relative": 1.3787063335930358,
+                "dual_relative_proxy": 1.3787063335930358
+              },
+              {
+                "iter": 30,
+                "objective": 17.45206642150879,
+                "mapping_norm": 0.043010760098695755,
+                "mapping_tolerance": 0.044873974800109864,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9584789466564136,
+                "dual_relative_proxy": 0.9584789466564136
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09326765800005887
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 119.57585906982422,
+                "mapping_norm": 2.5914881229400635,
+                "mapping_tolerance": 0.015936039447784423,
+                "L": 11.046493530273438,
+                "primal_relative": 162.61807906734043,
+                "dual_relative_proxy": 162.61807906734043
+              },
+              {
+                "iter": 10,
+                "objective": 19.336519241333008,
+                "mapping_norm": 0.09994296729564667,
+                "mapping_tolerance": 0.037041555404663085,
+                "L": 11.046493530273438,
+                "primal_relative": 2.6981309559982747,
+                "dual_relative_proxy": 2.6981309559982747
+              },
+              {
+                "iter": 20,
+                "objective": 17.16945457458496,
+                "mapping_norm": 0.0564357228577137,
+                "mapping_tolerance": 0.038733710289001466,
+                "L": 11.046493530273438,
+                "primal_relative": 1.4570182519731079,
+                "dual_relative_proxy": 1.4570182519731079
+              },
+              {
+                "iter": 30,
+                "objective": 16.000442504882812,
+                "mapping_norm": 0.04092467948794365,
+                "mapping_tolerance": 0.041229612350463865,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9926040327537354,
+                "dual_relative_proxy": 0.9926040327537354
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.12091625099992598
+          },
+          {
+            "batch_size": 8,
+            "solver": "FISTA",
+            "iterations": 40,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 39.347068786621094,
+                "mapping_norm": 1.487033724784851,
+                "mapping_tolerance": 0.00927789044380188,
+                "L": 11.046493530273438,
+                "primal_relative": 160.2771377601541,
+                "dual_relative_proxy": 160.2771377601541
+              },
+              {
+                "iter": 10,
+                "objective": 7.193292617797852,
+                "mapping_norm": 0.0599178671836853,
+                "mapping_tolerance": 0.02091420650482178,
+                "L": 11.046493530273438,
+                "primal_relative": 2.864936193963238,
+                "dual_relative_proxy": 2.864936193963238
+              },
+              {
+                "iter": 20,
+                "objective": 6.383157730102539,
+                "mapping_norm": 0.03363778069615364,
+                "mapping_tolerance": 0.022084444999694825,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5231435834868599,
+                "dual_relative_proxy": 1.5231435834868599
+              },
+              {
+                "iter": 30,
+                "objective": 5.961113452911377,
+                "mapping_norm": 0.02374788001179695,
+                "mapping_tolerance": 0.023662705421447754,
+                "L": 11.046493530273438,
+                "primal_relative": 1.0035995288295307,
+                "dual_relative_proxy": 1.0035995288295307
+              },
+              {
+                "iter": 40,
+                "objective": 5.733634948730469,
+                "mapping_norm": 0.017857566475868225,
+                "mapping_tolerance": 0.02513683605194092,
+                "L": 11.046493530273438,
+                "primal_relative": 0.7104142477982772,
+                "dual_relative_proxy": 0.7104142477982772
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.07056713199972364
+          }
+        ]
+      }
+    },
+    {
+      "confusion_gt_rows_pred_cols": [
+        [
+          5109,
+          13169,
+          4234,
+          26600
+        ],
+        [
+          128,
+          2,
+          986,
+          8820
+        ],
+        [
+          3852,
+          754,
+          24420,
+          76184
+        ],
+        [
+          338,
+          149,
+          1771,
+          140136
+        ]
+      ],
+      "normalized_confusion": [
+        [
+          0.10402752891350382,
+          0.2681422055709399,
+          0.08621110930118912,
+          0.5416191562143672
+        ],
+        [
+          0.01288244766505636,
+          0.00020128824476650564,
+          0.09923510466988728,
+          0.8876811594202898
+        ],
+        [
+          0.036612489307100086,
+          0.0071666191426670465,
+          0.23210721414314228,
+          0.7241136774070905
+        ],
+        [
+          0.0023736955208786886,
+          0.0010463924041743333,
+          0.012437321797266738,
+          0.9841425902776803
+        ]
+      ],
+      "per_class": {
+        "Person": {
+          "precision": 0.5419539620239737,
+          "recall": 0.10402752891350382,
+          "f1": 0.17455029980013326,
+          "iou": 0.09562043795620438,
+          "tp": 5109,
+          "fp": 4318,
+          "fn": 44003,
+          "support": 49112,
+          "predicted": 9427
+        },
+        "Car": {
+          "precision": 0.00014210601108426886,
+          "recall": 0.00020128824476650564,
+          "f1": 0.0001665972511453561,
+          "iou": 8.330556481172943e-05,
+          "tp": 2,
+          "fp": 14072,
+          "fn": 9934,
+          "support": 9936,
+          "predicted": 14074
+        },
+        "Motorcycle": {
+          "precision": 0.7774346566489446,
+          "recall": 0.23210721414314228,
+          "f1": 0.35748530606568535,
+          "iou": 0.21764511902745964,
+          "tp": 24420,
+          "fp": 6991,
+          "fn": 80790,
+          "support": 105210,
+          "predicted": 31411
+        },
+        "Background": {
+          "precision": 0.5566695797251132,
+          "recall": 0.9841425902776803,
+          "f1": 0.711108404755743,
+          "iou": 0.551720879691966,
+          "tp": 140136,
+          "fp": 111604,
+          "fn": 2258,
+          "support": 142394,
+          "predicted": 251740
+        }
+      },
+      "foreground_mIoU": 0.10444962084949193,
+      "all_class_mIoU": 0.21626743556011047,
+      "pixel_accuracy": 0.5532884181417372,
+      "class_confusion_rate": 0.44671158185826276,
+      "foreground_class_confusion_rate": 0.14077244335131317,
+      "background_FPR": 0.01585740972231976,
+      "image_id": 68093,
+      "native_shape": [
+        480,
+        640
+      ],
+      "ap": {
+        "Person": 0.2761174722187053,
+        "Car": 0.05236268517373616,
+        "Motorcycle": 0.6808190070849756,
+        "Background": 0.9009283356374868
+      },
+      "macro_ap_foreground": 0.33643305482580566,
+      "PSNR_db": 47.608797879968996,
+      "class_PSNR_db": {
+        "Person": 47.96811362472113,
+        "Car": 47.96522250687524,
+        "Motorcycle": 47.446635399903144,
+        "Background": 47.59085117314476
+      },
+      "SSIM": 0.9979086238795435,
+      "relative_reconstruction_error": 0.008956583216786385,
+      "encode": {
+        "tile_count": 165,
+        "batch_count": 11,
+        "converged_batches": 11,
+        "min_weight": 1.062194314727094e-05,
+        "batches": [
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 33.55592346191406,
+                "mapping_norm": 1.2467570304870605,
+                "mapping_tolerance": 0.007554903745651246,
+                "L": 11.046493530273438,
+                "primal_relative": 165.02619655541196,
+                "dual_relative_proxy": 165.02619655541196
+              },
+              {
+                "iter": 10,
+                "objective": 8.396842956542969,
+                "mapping_norm": 0.06652896851301193,
+                "mapping_tolerance": 0.018588252067565918,
+                "L": 11.046493530273438,
+                "primal_relative": 3.579086848574446,
+                "dual_relative_proxy": 3.579086848574446
+              },
+              {
+                "iter": 20,
+                "objective": 7.492368221282959,
+                "mapping_norm": 0.03269657865166664,
+                "mapping_tolerance": 0.02009394979476929,
+                "L": 11.046493530273438,
+                "primal_relative": 1.6271852465849188,
+                "dual_relative_proxy": 1.6271852465849188
+              },
+              {
+                "iter": 30,
+                "objective": 7.1002678871154785,
+                "mapping_norm": 0.021240917965769768,
+                "mapping_tolerance": 0.021742268085479736,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9769412226112331,
+                "dual_relative_proxy": 0.9769412226112331
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.10501290000001973
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 58.50331497192383,
+                "mapping_norm": 1.6677600145339966,
+                "mapping_tolerance": 0.009694482564926148,
+                "L": 11.046493530273438,
+                "primal_relative": 172.0318751789618,
+                "dual_relative_proxy": 172.0318751789618
+              },
+              {
+                "iter": 10,
+                "objective": 12.287973403930664,
+                "mapping_norm": 0.08254305273294449,
+                "mapping_tolerance": 0.02500020217895508,
+                "L": 11.046493530273438,
+                "primal_relative": 3.3016954079846763,
+                "dual_relative_proxy": 3.3016954079846763
+              },
+              {
+                "iter": 20,
+                "objective": 10.929374694824219,
+                "mapping_norm": 0.04162469506263733,
+                "mapping_tolerance": 0.026598223686218263,
+                "L": 11.046493530273438,
+                "primal_relative": 1.564942665107556,
+                "dual_relative_proxy": 1.564942665107556
+              },
+              {
+                "iter": 30,
+                "objective": 10.304512023925781,
+                "mapping_norm": 0.027902482077479362,
+                "mapping_tolerance": 0.028574815750122072,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9764711108368271,
+                "dual_relative_proxy": 0.9764711108368271
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09125808699991467
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 68.4886703491211,
+                "mapping_norm": 1.8416190147399902,
+                "mapping_tolerance": 0.010811303615570068,
+                "L": 11.046493530273438,
+                "primal_relative": 170.34199391900842,
+                "dual_relative_proxy": 170.34199391900842
+              },
+              {
+                "iter": 10,
+                "objective": 13.655024528503418,
+                "mapping_norm": 0.0864729955792427,
+                "mapping_tolerance": 0.02718197536468506,
+                "L": 11.046493530273438,
+                "primal_relative": 3.1812623777000693,
+                "dual_relative_proxy": 3.1812623777000693
+              },
+              {
+                "iter": 20,
+                "objective": 12.125147819519043,
+                "mapping_norm": 0.04496646299958229,
+                "mapping_tolerance": 0.02885208034515381,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5585171835671516,
+                "dual_relative_proxy": 1.5585171835671516
+              },
+              {
+                "iter": 30,
+                "objective": 11.391739845275879,
+                "mapping_norm": 0.030832970514893532,
+                "mapping_tolerance": 0.030984732627868654,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9951020357413501,
+                "dual_relative_proxy": 0.9951020357413501
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09326103900002636
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 72.98460388183594,
+                "mapping_norm": 1.9094125032424927,
+                "mapping_tolerance": 0.011063879728317261,
+                "L": 11.046493530273438,
+                "primal_relative": 172.58073570299928,
+                "dual_relative_proxy": 172.58073570299928
+              },
+              {
+                "iter": 10,
+                "objective": 13.601591110229492,
+                "mapping_norm": 0.0863533690571785,
+                "mapping_tolerance": 0.02826603126525879,
+                "L": 11.046493530273438,
+                "primal_relative": 3.055022767321201,
+                "dual_relative_proxy": 3.055022767321201
+              },
+              {
+                "iter": 20,
+                "objective": 12.090428352355957,
+                "mapping_norm": 0.045056115835905075,
+                "mapping_tolerance": 0.029815787315368655,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5111496255099974,
+                "dual_relative_proxy": 1.5111496255099974
+              },
+              {
+                "iter": 30,
+                "objective": 11.348836898803711,
+                "mapping_norm": 0.03153911232948303,
+                "mapping_tolerance": 0.03190262603759766,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9886055239563596,
+                "dual_relative_proxy": 0.9886055239563596
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09278371800019158
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 77.42711639404297,
+                "mapping_norm": 1.9613221883773804,
+                "mapping_tolerance": 0.011233075618743897,
+                "L": 11.046493530273438,
+                "primal_relative": 174.60242011588088,
+                "dual_relative_proxy": 174.60242011588088
+              },
+              {
+                "iter": 10,
+                "objective": 14.005609512329102,
+                "mapping_norm": 0.08751177042722702,
+                "mapping_tolerance": 0.029195019721984863,
+                "L": 11.046493530273438,
+                "primal_relative": 2.997489683534196,
+                "dual_relative_proxy": 2.997489683534196
+              },
+              {
+                "iter": 20,
+                "objective": 12.480216026306152,
+                "mapping_norm": 0.045526206493377686,
+                "mapping_tolerance": 0.03064479732513428,
+                "L": 11.046493530273438,
+                "primal_relative": 1.485609645590247,
+                "dual_relative_proxy": 1.485609645590247
+              },
+              {
+                "iter": 30,
+                "objective": 11.72472858428955,
+                "mapping_norm": 0.031732432544231415,
+                "mapping_tolerance": 0.03271393203735352,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9699975077284686,
+                "dual_relative_proxy": 0.9699975077284686
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.08493256499968993
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 78.92855072021484,
+                "mapping_norm": 1.9634125232696533,
+                "mapping_tolerance": 0.011208791971206665,
+                "L": 11.046493530273438,
+                "primal_relative": 175.16718378869916,
+                "dual_relative_proxy": 175.16718378869916
+              },
+              {
+                "iter": 10,
+                "objective": 14.814263343811035,
+                "mapping_norm": 0.0913604274392128,
+                "mapping_tolerance": 0.029326915740966797,
+                "L": 11.046493530273438,
+                "primal_relative": 3.1152415837438823,
+                "dual_relative_proxy": 3.1152415837438823
+              },
+              {
+                "iter": 20,
+                "objective": 13.158268928527832,
+                "mapping_norm": 0.04715614765882492,
+                "mapping_tolerance": 0.03091900634765625,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5251508126941955,
+                "dual_relative_proxy": 1.5251508126941955
+              },
+              {
+                "iter": 30,
+                "objective": 12.351357460021973,
+                "mapping_norm": 0.03266339749097824,
+                "mapping_tolerance": 0.033112366676330565,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9864410421115185,
+                "dual_relative_proxy": 0.9864410421115185
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.08836615500013068
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 79.81251525878906,
+                "mapping_norm": 2.019580364227295,
+                "mapping_tolerance": 0.011782800436019899,
+                "L": 11.046493530273438,
+                "primal_relative": 171.4007103144562,
+                "dual_relative_proxy": 171.4007103144562
+              },
+              {
+                "iter": 10,
+                "objective": 14.681861877441406,
+                "mapping_norm": 0.08898144215345383,
+                "mapping_tolerance": 0.029593849182128908,
+                "L": 11.046493530273438,
+                "primal_relative": 3.0067545997763556,
+                "dual_relative_proxy": 3.0067545997763556
+              },
+              {
+                "iter": 20,
+                "objective": 13.06688404083252,
+                "mapping_norm": 0.0467483215034008,
+                "mapping_tolerance": 0.03117613506317139,
+                "L": 11.046493530273438,
+                "primal_relative": 1.499490601021451,
+                "dual_relative_proxy": 1.499490601021451
+              },
+              {
+                "iter": 30,
+                "objective": 12.260522842407227,
+                "mapping_norm": 0.032641127705574036,
+                "mapping_tolerance": 0.03334019851684571,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9790321940969112,
+                "dual_relative_proxy": 0.9790321940969112
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09828298200000063
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 80.46245574951172,
+                "mapping_norm": 2.023872137069702,
+                "mapping_tolerance": 0.011678576946258545,
+                "L": 11.046493530273438,
+                "primal_relative": 173.2978381170052,
+                "dual_relative_proxy": 173.2978381170052
+              },
+              {
+                "iter": 10,
+                "objective": 15.26366901397705,
+                "mapping_norm": 0.09049928933382034,
+                "mapping_tolerance": 0.02945519542694092,
+                "L": 11.046493530273438,
+                "primal_relative": 3.0724389372424943,
+                "dual_relative_proxy": 3.0724389372424943
+              },
+              {
+                "iter": 20,
+                "objective": 13.57804012298584,
+                "mapping_norm": 0.04786234721541405,
+                "mapping_tolerance": 0.031126599311828613,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5376670845383864,
+                "dual_relative_proxy": 1.5376670845383864
+              },
+              {
+                "iter": 30,
+                "objective": 12.741756439208984,
+                "mapping_norm": 0.03334729000926018,
+                "mapping_tolerance": 0.03336627388000488,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9994310461272069,
+                "dual_relative_proxy": 0.9994310461272069
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.09780192600010196
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 30,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 68.39016723632812,
+                "mapping_norm": 1.8124767541885376,
+                "mapping_tolerance": 0.010493439674377441,
+                "L": 11.046493530273438,
+                "primal_relative": 172.72475093311755,
+                "dual_relative_proxy": 172.72475093311755
+              },
+              {
+                "iter": 10,
+                "objective": 14.228078842163086,
+                "mapping_norm": 0.0887226015329361,
+                "mapping_tolerance": 0.027099234580993652,
+                "L": 11.046493530273438,
+                "primal_relative": 3.2739892068819785,
+                "dual_relative_proxy": 3.2739892068819785
+              },
+              {
+                "iter": 20,
+                "objective": 12.630202293395996,
+                "mapping_norm": 0.04576299339532852,
+                "mapping_tolerance": 0.028848423957824706,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5863255983145654,
+                "dual_relative_proxy": 1.5863255983145654
+              },
+              {
+                "iter": 30,
+                "objective": 11.87877082824707,
+                "mapping_norm": 0.030832350254058838,
+                "mapping_tolerance": 0.03102549648284912,
+                "L": 11.046493530273438,
+                "primal_relative": 0.9937745966806025,
+                "dual_relative_proxy": 0.9937745966806025
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.13965164299997923
+          },
+          {
+            "batch_size": 16,
+            "solver": "FISTA",
+            "iterations": 40,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 72.85328674316406,
+                "mapping_norm": 1.8524501323699951,
+                "mapping_tolerance": 0.010564984560012817,
+                "L": 11.046493530273438,
+                "primal_relative": 175.33865022210196,
+                "dual_relative_proxy": 175.33865022210196
+              },
+              {
+                "iter": 10,
+                "objective": 15.073057174682617,
+                "mapping_norm": 0.09249371290206909,
+                "mapping_tolerance": 0.027965855598449708,
+                "L": 11.046493530273438,
+                "primal_relative": 3.3073800505211968,
+                "dual_relative_proxy": 3.3073800505211968
+              },
+              {
+                "iter": 20,
+                "objective": 13.350430488586426,
+                "mapping_norm": 0.04762408509850502,
+                "mapping_tolerance": 0.02976690673828125,
+                "L": 11.046493530273438,
+                "primal_relative": 1.5999003698042575,
+                "dual_relative_proxy": 1.5999003698042575
+              },
+              {
+                "iter": 30,
+                "objective": 12.53026294708252,
+                "mapping_norm": 0.03236032649874687,
+                "mapping_tolerance": 0.03207355499267578,
+                "L": 11.046493530273438,
+                "primal_relative": 1.0089410577074034,
+                "dual_relative_proxy": 1.0089410577074034
+              },
+              {
+                "iter": 40,
+                "objective": 12.101951599121094,
+                "mapping_norm": 0.023620713502168655,
+                "mapping_tolerance": 0.034138286590576175,
+                "L": 11.046493530273438,
+                "primal_relative": 0.6919126840035703,
+                "dual_relative_proxy": 0.6919126840035703
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.1845903799999178
+          },
+          {
+            "batch_size": 5,
+            "solver": "FISTA",
+            "iterations": 40,
+            "converged": true,
+            "residuals": [
+              {
+                "iter": 1,
+                "objective": 25.01881980895996,
+                "mapping_norm": 1.0380897521972656,
+                "mapping_tolerance": 0.005572456955909729,
+                "L": 11.046493530273438,
+                "primal_relative": 186.28941603511996,
+                "dual_relative_proxy": 186.28941603511996
+              },
+              {
+                "iter": 10,
+                "objective": 5.198667049407959,
+                "mapping_norm": 0.05577479675412178,
+                "mapping_tolerance": 0.016349148273468016,
+                "L": 11.046493530273438,
+                "primal_relative": 3.411480269258743,
+                "dual_relative_proxy": 3.411480269258743
+              },
+              {
+                "iter": 20,
+                "objective": 4.59392786026001,
+                "mapping_norm": 0.02829817868769169,
+                "mapping_tolerance": 0.01738935613632202,
+                "L": 11.046493530273438,
+                "primal_relative": 1.6273275712942505,
+                "dual_relative_proxy": 1.6273275712942505
+              },
+              {
+                "iter": 30,
+                "objective": 4.308281898498535,
+                "mapping_norm": 0.019269783049821854,
+                "mapping_tolerance": 0.018758943557739258,
+                "L": 11.046493530273438,
+                "primal_relative": 1.0272317836295126,
+                "dual_relative_proxy": 1.0272317836295126
+              },
+              {
+                "iter": 40,
+                "objective": 4.15723991394043,
+                "mapping_norm": 0.01374183688312769,
+                "mapping_tolerance": 0.02000279188156128,
+                "L": 11.046493530273438,
+                "primal_relative": 0.6869959435910051,
+                "dual_relative_proxy": 0.6869959435910051
+              }
+            ],
+            "maxiter": 160,
+            "tolerance": 0.003,
+            "seconds": 0.04375264300006165
+          }
+        ]
+      }
+    }
+  ],
+  "seconds": 8.59380030632019
+}

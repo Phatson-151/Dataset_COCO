@@ -1,40 +1,61 @@
 {
-  "status": "experiments_completed_with_scientific_limitations",
+  "status": "completed_with_reported_wins_losses_and_limitations",
   "artifact_consistency_passed": true,
-  "fully_verified_final": false,
-  "independent_unseen_generalization_confirmed": false,
-  "all_primary_subproblems_converged": false,
-  "per_class_seen_test": {
-    "Person": {
-      "IoU_increased": false,
-      "AP_increased": false
+  "independent_unseen_superiority": false,
+  "all_classes_improved": false,
+  "seed42_deltas": {
+    "macro_AP_foreground": 0.0015238780084568526,
+    "foreground_mIoU": 0.0010532818035904473,
+    "all_class_mIoU": 0.0014861172427838298,
+    "background_FPR": -0.01149226268934797,
+    "PSNR_db_mean_image": 0.5269708660925829
+  },
+  "three_seed_deltas": {
+    "foreground_AP": {
+      "SCSC_minus_CSC_per_seed": [
+        0.0015238780084568526,
+        -0.0009846220688378149,
+        -0.0015556145026106305
+      ],
+      "mean": -0.00033878618766386426,
+      "sample_std": 0.0016381839092388187
     },
-    "Car": {
-      "IoU_increased": true,
-      "AP_increased": true
+    "foreground_mIoU": {
+      "SCSC_minus_CSC_per_seed": [
+        0.0010532818035904473,
+        -0.0020732091279541537,
+        -0.00015435328012167182
+      ],
+      "mean": -0.00039142686816179273,
+      "sample_std": 0.0015766703209191576
     },
-    "Motorcycle": {
-      "IoU_increased": true,
-      "AP_increased": true
+    "all_class_mIoU": {
+      "SCSC_minus_CSC_per_seed": [
+        0.0014861172427838298,
+        -0.0007871779362739473,
+        -0.000412629282778354
+      ],
+      "mean": 9.54366745771762e-05,
+      "sample_std": 0.0012188379734605933
     },
-    "Background": {
-      "IoU_increased": false,
-      "AP_increased": false
+    "Background_FPR": {
+      "SCSC_minus_CSC_per_seed": [
+        -0.01149226268934797,
+        -0.007244088343492439,
+        0.0015314887997688043
+      ],
+      "mean": -0.005734954077690535,
+      "sample_std": 0.00664173474227411
+    },
+    "PSNR": {
+      "SCSC_minus_CSC_per_seed": [
+        0.5269708660925829,
+        0.35232653561055827,
+        0.6733242385454901
+      ],
+      "mean": 0.5175405467495438,
+      "sample_std": 0.1607065011583522
     }
   },
-  "metric_deltas_SCSC_minus_CSC": {
-    "macro_AP_foreground": 0.002193932720046393,
-    "macro_AP_all_classes": 0.001213630339506444,
-    "foreground_mIoU": 0.033886655436013255,
-    "all_class_mIoU": 0.002850364856478091,
-    "background_FPR": 0.11488116939412307,
-    "PSNR_db_mean_image": -2.255246120075043,
-    "SSIM_mean_image": -0.007456240708447637
-  },
-  "unavailable": [
-    "new independent TEST",
-    "N>=20",
-    "other-dataset inpainting"
-  ],
-  "note": "Improvements on these five previously-seen images do not establish unseen-data superiority"
+  "K100_excluded": true
 }

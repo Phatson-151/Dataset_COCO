@@ -1,3 +1,7 @@
+# สถานะ branch v2
+
+อ่าน README_V2.md และ final output/FINAL_REPORT_TH.md สำหรับผลใหม่ทั้งหมด ข้อความเดิมด้านล่างเป็นประวัติ ไม่ใช่ผล v2
+
 # สถานะผลใหม่
 
 อ่าน FINAL_REPORT_TH.md และ verification.json

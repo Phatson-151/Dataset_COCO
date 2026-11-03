@@ -1,166 +1,78 @@
-"""Write the Thai report from new results, without treating hypotheses as facts."""
+"""Generate a factual Thai v2 report from independently checked results."""
 import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 import numpy as np
 from native_final import jwrite,NAMES
-from paper_scsc.experiments import OUT,tag
+from paper_scsc.v2 import OUT,tag
 
-
-def read(p):return json.loads(Path(p).read_text())
-def fmt(x):return f'{x:.6f}' if x is not None else 'N/A'
-
-
+def read(p):return json.loads(p.read_text())
 def main():
-    r=read(OUT/'REPORT_METRICS.json');v=read(OUT/'verification.json');s=r['selection']
-    a=r['TEST_PREVIOUSLY_SEEN']['CSC'];b=r['TEST_PREVIOUSLY_SEEN']['SCSC']
-    pair=s['paired_models'];ids=[tag(c['K'],c['gamma'],c['N']) for c in pair]
-    inp=[read(OUT/'metrics'/f'{k}_inpainting.json')['per_image'] for k in ids]
-    train=[read(OUT/'checkpoints'/k/'completed.json') for k in ids]
-    lines=['# รายงานการทดลองใหม่ SCSC COCO Final',
-        '', 'วันที่จัดทำ: 2 พฤศจิกายน 2026 (Asia/Bangkok)', '',
-        '**สถานะ: รันการทดลองและตรวจความสอดคล้องของไฟล์แล้ว แต่ไม่ใช่ Fully Verified Final สำหรับการพิสูจน์บนข้อมูลใหม่อิสระ**', '',
-        '## 1. Project objective', '',
-        'ทดสอบสมมติฐานว่า supervision ช่วยให้ convolutional dictionary แยก Person, Car, Motorcycle และ Background ได้ดีขึ้น พร้อมรักษาคุณภาพ reconstruction โดยยอมรับผลลบตามจริง ไม่สร้างผลให้ SCSC ต้องชนะ', '',
-        '## 2. Related papers', '',
-        'อ่าน PDF ทั้งสองไฟล์ใน references/: Affara, Ghanem & Wonka, *Supervised Convolutional Sparse Coding*, arXiv:1804.02678v1 และ Wohlberg, *SPORCO*, SciPy 2017 อ่านสมการ 1–10, Algorithms 1–2, Sections 5.1–5.4 และ Figures 3–6 / Tables 1–2 เปรียบเทียบกับโค้ดใน PAPER_AUDIT.md มี SHA256 ของเอกสารใน environment.json', '',
-        '## 3. Dataset description', '',
-        'มีภาพ JPEG COCO ต้นฉบับ 18 ภาพ ตรวจ checksum และขนาดภาพครบทุกภาพ ใช้ pycocotools rasterizer มาตรฐานแทนการปัดพิกัด polygon ด้วย OpenCV จำนวน TRAIN/VAL/previously-seen TEST คือ 10/3/5 ภาพ ดู image IDs, dimensions, ignore count และจำนวนพิกเซลแต่ละคลาสใน experiment_configs/dataset_audit.json', '',
-        'Background คือบริเวณที่ไม่ใช่สามคลาสเป้าหมาย ซึ่งรวมวัตถุคลาสอื่นและบริเวณไม่มี annotation ตามนิยามงาน ไม่ใช่การรับรองว่ามี annotation ครบทุกสิ่ง Ignore เฉพาะ target-class crowds และบริเวณซ้อนกันของคนละ target class ไม่ใช้ GT แก้ prediction', '',
-        '**ข้อจำกัด holdout:** TEST ทั้ง 5 ภาพเคยถูกดูในโครงการเดิม จึงไม่ใช่ independent unseen test การตรวจการเข้าถึง images.cocodataset.org ถูก proxy ปฏิเสธ CONNECT HTTP 403 ไม่ได้ดาวน์โหลดภาพหรือ annotation เพิ่ม N=20/25/40 และ holdout ใหม่จึงเป็น `not run` ไม่ซ้ำภาพเพื่อเพิ่ม N', '',
-        '## 4. Mathematical formulation', '',
-        '`0.5 sum(M*(D*Z-X)^2) + beta*sum(abs(Z)) + gamma*(sum(log(1+exp(-Y*(WZ+b)))) + alpha*(||W||²+||b||²))`, ภายใต้ dictionary compact support และ filter norm <=1 ใช้ loss แบบ sum, beta=.015, alpha=1, filter 11x11 บน grayscale [0,1] highpass; beta ต่างจาก .5 ใน paper เพราะการเตรียมสัญญาณ/สเกลต่างกัน ไม่อ้างว่าเป็นค่าเดียวกัน', '',
-        '## 5. CSC vs SCSC architecture', '',
-        'CSC ใช้ gamma=0 ไม่มี supervised gradient ใน sparse coding ส่วน SCSC มี logistic loss ใน Z-step จริง ใช้ four one-vs-all heads ตามแนว multiclass extension ของ paper เพิ่ม Background เป็น head ที่สี่ ไม่ใช้ softmax ทั้งสอง arm เริ่ม dictionary seed เดียวกัน ใช้ภาพ/crop/labels เดียวกันและฝึก evaluation classifier ใหม่แยกกันจาก label-free TRAIN codes ของ dictionary แต่ละตัว ตาม Section 5.2', '',
-        'Internal channel order = Person, Car, Motorcycle, Background; public class IDs ใน NPZ prediction = Background 0, Person 1, Car 2, Motorcycle 3 OVA sigmoid probability ไม่จำเป็นต้องรวมเป็น 1 Decision rule เป็น argmax logits เหมือนกันทั้งคู่ ไม่มี smoothing, offset calibration หรือ threshold tuning', '',
-        '## 6. ADMM optimization', '',
-        'FFT scaled ADMM แยก reconstruction / l1 / logistic prox ใช้ Newton สำหรับ logistic prox และ Woodbury สำหรับ frequency systems อัปเดต Z → global bank-wide D → theta บน supervised Z เดียวกัน แก้ข้อบกพร่องเดิมที่ใช้ EMA dictionary และ refit theta บน label-free codes ระหว่างฝึก การ fit theta ใช้ L-BFGS แทน gradient descent เป็น solver substitution ของ objective เดียวกัน', '',
-        'แก้ boundary mask ให้ตรงกับ causal top-left kernel anchor: ตัด first f-1 rows/columns ที่ wrap ไม่ใช้ symmetric f//2 ที่ยังเหลือ circular artifacts ตรวจเทียบกับ direct linear convolution และ adjoint identity D ที่คืนต้องเป็น compact feasible dictionary; หากผล feasible ทำให้ objective แย่กว่าเดิม จะยังไม่ยอมรับว่า converge และป้องกันการคืน dictionary ที่แย่ลง', '',
-        '## 7. Experimental setup', '',
-        'CPU quota 4 cores, RAM 32 GiB, ไม่มี GPU ใช้ BLAS หนึ่ง thread ต่อ subprocess, training seed=42 จำนวน outer iterations=10 ทุก candidate, atol=1e-4, rtol=.003, max ADMM=1000 และ residual-balanced adaptive rho ไม่ผ่อน tolerance เพื่อให้ผ่าน', '',
-        'Runtime เป็น process wall time ใน Cloud ที่มีงานขนาน ไม่ใช่ controlled method-speed benchmark กรณี resume รวม process segments และค่า restart/งานที่ยกเลิก/การรอ lock ตาม resume_event.json จึงไม่ใช่เวลาคำนวณสุทธิหรือ end-to-end latency ที่ใช้เปรียบเทียบความเร็ว CSC/SCSC โดยตรง เก็บ D/theta checkpoint เดิมและ reinitialize Z ก่อนแก้ convex Z-step เดิม source/retained-prefix hashes ทำให้ตรวจได้ว่ารอบก่อนหน้าไม่ได้ถูกเขียนทับ', '',
-        '**Native resolution:** ใช้ RGB ต้นฉบับสำหรับแสดงผล แปลง grayscale สำหรับ sparse optimization โดยไม่มี resize ฝึกสี่ intact 64x64 native crops/ภาพ ใช้ global D ร่วมทั้ง tile bank ไม่ใช่ global full-frame D การ inference เป็น overlapping tiles ที่มี reflected context และ blend เฉพาะ valid interior ครอบคลุมทุกพิกเซลในขนาดต้นฉบับ', '',
-        'Full-frame feasibility pilot: TRAIN 10 ภาพ pad เท่านั้นเป็น 640x640, K=4; Z 10 ขั้นใช้ 36.58 วินาที และ D 10 ขั้น 7.64 วินาที ทั้งคู่ยังไม่ converge เป็น `inconclusive` pilot ไม่ใช่ผลฝึกสำเร็จ รายงานนี้จึงไม่เรียกการทดลองหลักว่า exact full-image optimization', '',
-        '## 8. Hyperparameter search', '',
-        f'Gamma grid: {[c["gamma"] for c in s["gamma_configs"]]}; K grid: {sorted(set(c["K"] for c in s["K_configs"]))}; N grid: {sorted(set(c["N"] for c in s["N_configs"]))}', '',
-        f'เลือก gamma บน VAL ที่ K=4 แล้วเลือก K ด้วย gamma นั้น Criterion คือ maximum pooled foreground AP; ไม่เลือกจากผลต่าง SCSC−CSC ให้เป็นบวก ไม่เปิด TEST เพื่อเลือกระหว่าง candidates ผลสุดท้าย: **K={s["selected"]["K"]}, gamma={s["selected"]["gamma"]:g}, N=10** N เป็น nested learning curve ใช้ VAL/TEST ชุดเดิม ไม่ใช้ N เพื่อเลือกภาพที่ทำให้ TEST ดีขึ้น', '',
-        'Controls: beta=.015, alpha=1, 11x11 filters, four native tiles/image, 24 positive + 24 negative anchors/head/tile เมื่อมีเพียงพอ N learning curve คง K=4 และใช้ gamma ที่ VAL เลือก ไม่ได้ทำ N sweep ซ้ำทุก K หรือสรุปว่าแนวโน้ม N ที่ K=4 ใช้แทน K=100 ได้ การ sweep gamma เป็น supervision ablation หลัก ไม่ได้รันเต็ม Cartesian grid ของ beta/alpha/filter21/seeds หรือ background-head ablation ให้ถือส่วนเหล่านี้ว่า `not run`', '',
-        '## 9. Figure 3 results', '',
-        'figures/figure3_dictionaries แสดง filters ทั้งหมดของทุก K ที่ทดลองคู่กัน CSC ซ้าย / SCSC ขวา ใช้ symmetric grayscale range เดียวกันในแต่ละคู่ ไม่เลือกเฉพาะ filters สวย มี dictionary evolution ที่ outer 1/5/10 และ supplementary absolute filter-correlation ใน tables/dictionary_diversity.csv ความคล้ายเชิง semantic จากรูปอย่างเดียวไม่ใช่หลักฐานการจำแนก ต้องดู AP/IoU ร่วมกัน', '',
-        '## 10. Figure 4 results', '',
-        'แสดงครบ TEST ทั้ง 5 ภาพทุกคลาส มี 4x4 composite, 4 panels แยกรายคลาส, dense OVA probabilities ในช่วง 0–1 ร่วมกัน, binary argmax masks, multiclass maps และ original RGB/GT ไม่มีการใช้ GT ลบ false positives สีของ probability ไม่ได้ปรับแยกเพื่อทำให้ SCSC ดูเด่น ผลภาพและ metrics มาจาก NPZ prediction เดียวกัน', '',
-        '## 11. Figure 5 results', '',
-        'figures/figure5_ap_psnr มี AP/PSNR vs gamma/K/N 6 panels รวมและแยก, macro และรายคลาส ทุกค่ามาจาก VAL เนื่องจากใช้เลือกโมเดล ไม่ใช่หลักฐาน independent test CSC ไม่ขึ้นกับ gamma จึงเป็น horizontal baseline แกน gamma ใช้ symlog เพื่อแสดงช่วงใกล้ศูนย์และช่วง 100 ได้ชัด Numeric source อยู่ tables/figure5_6_numeric_source.csv', '',
-        '## 12. Figure 6 results', '',
-        'figures/figure6_class_psnr วัด reconstruction PSNR เฉพาะ native GT region ของ Person/Car/Motorcycle แยกจริง ไม่ใช้ global PSNR เดิมซ้ำเป็นสามคลาส Class PSNR aggregate เป็น mean ต่อภาพที่มีคลาสนั้น, global PSNR เป็น mean ต่อภาพ; GT ใช้เฉพาะ evaluation', '',
-        '## 13. Tables 1–2 results', '',
-        'Table 1 ใน tables/table1_gamma_ap_psnr แสดง pooled pixel AP (0–1), foreground macro AP, global และ class-region PSNR (dB) ของทุก gamma บน VAL พร้อม transposed layout TEST แสดงเฉพาะคู่ที่เลือกแล้ว ไม่มี TEST sweep เพื่อเลือก gamma', '',
-        'Table 2 ใน tables/table2_inpainting แสดง PSNR ทั้งภาพและเฉพาะ missing pixels, SSIM, relative error ต่อภาพและค่าเฉลี่ย พร้อม figures/inpainting ไม่มี other-dataset table ที่สมมติขึ้น', '',
-        '## 14. Multiclass evaluation — previously-seen TEST', '',
-        '| Metric | CSC | SCSC | SCSC−CSC |', '|---|---:|---:|---:|']
-    for name,field in [('Foreground pooled macro AP','macro_AP_foreground'),('All-class pooled macro AP','macro_AP_all_classes'),('Foreground mIoU','foreground_mIoU'),('All-class mIoU','all_class_mIoU'),('Pixel accuracy','pixel_accuracy'),('Background FPR (lower better)','background_FPR'),('Global PSNR dB','PSNR_db_mean_image'),('SSIM','SSIM_mean_image'),('Relative reconstruction error (lower better)','relative_reconstruction_error_mean_image')]:
-        lines.append(f'| {name} | {fmt(a[field])} | {fmt(b[field])} | {fmt(b[field]-a[field])} |')
-    lines+=['','| Class | CSC AP | SCSC AP | CSC IoU | SCSC IoU | CSC precision / recall | SCSC precision / recall |','|---|---:|---:|---:|---:|---:|---:|']
-    for name in NAMES:
-        x=a['per_class'][name];y=b['per_class'][name]
-        lines.append(f'| {name} | {fmt(a["pooled_pixel_AP"][name])} | {fmt(b["pooled_pixel_AP"][name])} | {fmt(x["iou"])} | {fmt(y["iou"])} | {fmt(x["precision"])} / {fmt(x["recall"])} | {fmt(y["precision"])} / {fmt(y["recall"])} |')
-    lines+=['','F1, support, TP/FP/FN, full confusion และ normalized confusion เก็บใน metrics JSON/CSV มี precision–recall curves และ IoU comparison chart ตัวเลข AP รวมพิกเซลทั้ง split; AP ต่อภาพแยกเก็บใน per_image ไม่สลับนิยามสองแบบนี้','',
-        '## 15. Confusion matrix analysis','',
-        'Confusion เป็น GT row / predicted column มีทุกทิศทาง Person↔Car↔Motorcycle, foreground→Background และ Background→foreground ไม่ซ่อนค่า zero หรือ false positives ภาพ heatmap ใช้ลำดับ Background, Person, Car, Motorcycle ส่วน raw JSON ใช้ internal score order ตามระบุ','',
-        f'Foreground-only cross-class confusion rate: CSC={a["foreground_class_confusion_rate"]:.6f}, SCSC={b["foreground_class_confusion_rate"]:.6f}. Background→foreground FPR: CSC={a["background_FPR"]:.6f}, SCSC={b["background_FPR"]:.6f}. Class confusion rate รวม (1−pixel accuracy): CSC={a["class_confusion_rate"]:.6f}, SCSC={b["class_confusion_rate"]:.6f}.','',
-        '## 16. Reconstruction and inpainting','',
-        'Reconstruction ใช้ grayscale highpass sparse representation บวก lowpass ที่เก็บจากภาพอินพุตตามแนว SPORCO ไม่ใช่ RGB reconstruction Lowpass มีส่วนทำให้ global PSNR สูง ต้องไม่อ้างว่า PSNR ทั้งหมดเกิดจาก dictionary เพียงอย่างเดียว','',
-        'Inpainting ใช้ floor(50% pixels) หายแบบสุ่ม seed=42+image_id และ mask เดียวกันทั้งสอง arm Gaussian normalized interpolation สำหรับ lowpass ใช้เฉพาะ observed pixels ส่วน sparse coding มี observed mask อยู่ใน data term ไม่ใช้ lowpass จากภาพเต็มและไม่คัดลอกพิกเซลที่หายกลับจากต้นฉบับ','',
-        '| Inpainting metric (mean over 5 images) | CSC | SCSC |','|---|---:|---:|']
-    for field in ['PSNR_all_db','PSNR_missing_db','SSIM','relative_error']:
-        vals=[np.mean([row[field] for row in rows]) for rows in inp]
-        lines.append(f'| {field} | {vals[0]:.6f} | {vals[1]:.6f} |')
-    lines+=['','## 17. ADMM convergence analysis','',
-        '| Selected model | Z converged / 10 | D converged / 10 | Fresh coding | Fresh classifier | Train seconds | Peak RSS MiB |','|---|---:|---:|---|---|---:|---:|']
-    for arm,t in zip(['CSC','SCSC'],train):
-        lines.append(f'| {arm} | {t["z_converged"]}/10 | {t["d_converged"]}/10 | {t["fresh_encoding"]["converged"]} | {t["fresh_classifier"]["success"]} | {t["seconds"]:.2f} | {t["peak_rss_MiB"]:.2f} |')
-    lines+=['',f'ตรวจทั้งหมด {v["models_checked"]} โมเดล พบ primary Z/D subproblems ที่ไม่ converge {len(v["nonconverged_primary_subproblems"])} รายการ, auxiliary coding ไม่ converge {len(v["nonconverged_auxiliary_encodings"])} รายการ, classifier success=False {len(v["unsuccessful_classifier_fits"])} รายการ และ inference/inpainting batches ไม่ converge {len(v["nonconverged_inference_batches"])} รายการ ดู verification.json และ convergence_runtime.csv การรันจบ (`completed`) ไม่เท่ากับทุก subproblem converge และไม่เท่ากับ nonconvex outer optimization ถึง stationary point', '',
-        'Residual histories มี primal, dual, tolerances, rho, objective ทุก 10 ADMM iterations เกณฑ์ pass ต้องผ่าน residual ทั้งสองจริง ตรวจ losses แยกก่อน/หลัง Z, D และ classifier การสลับ outer อาจมี objective แกว่งเล็กน้อยจากการแก้ subproblem แบบ tolerance-limited ไม่อ้าง monotonic/global convergence เพียงเพราะครบ 10 รอบ', '',
-        'มี outer validation diagnostic ครบ 10 checkpoints ของทั้งสอง arm โดยใช้ native centre crop 64x64 คงที่หนึ่ง crop ต่อ VAL image รวม 3 crops และใช้ training heads ของ checkpoint นั้น ไม่ใช่ fresh evaluation heads กราฟนี้มีไว้ตรวจแนวโน้มระหว่างฝึกเท่านั้น AP ข้ามคลาสที่ไม่มี positive pixels ใน subset ตามที่ระบุชื่อ field; class support/coordinates/encoding convergence เก็บไว้ใน outer_validation_training_head_sampled.json ไม่ใช้กราฟ sampled นี้แทน full-VAL final metrics หรือเลือกโมเดล', '',
-        '## 18. Comparison with original paper','',
-        'ทำตาม logistic supervision ใน Z, compact unit-ball dictionaries, FFT ADMM, alternating optimization และ fresh evaluation classifiers โดยตรง ดัดแปลง COCO เป็น four-class OVA พร้อม Background, sampling native tiles, grayscale low/high separation, reflected tiled inference และ L-BFGS แทน GD ไม่ใช่ exact full-image optimization และไม่ใช่ benchmark เดียวกับ Graz/ECP/LabelMe/Cat ใน paper จึงเปรียบเทียบแนวโน้ม ไม่เปรียบเทียบตัวเลขต่าง dataset ราวกับเป็นการทดลองเดียวกัน','',
-        '## 19. Limitations and failed / unrun experiments','',
-        '- Independent new holdout: `not run`, ไม่มีข้อมูลใหม่และ original COCO host ถูกปฏิเสธการเข้าถึง',
-        '- N=20/25/40: `not run`, จำนวน TRAIN ที่มีจริงสูงสุด 10 ไม่เพิ่ม N ด้วยการใช้ภาพซ้ำ',
-        '- Other-dataset / out-of-domain inpainting: `not run`, ไม่มี dataset ที่เข้าถึงได้และมี provenance เพียงพอ',
-        '- Full-frame training: `inconclusive` feasibility pilot; ใช้ native-tile approximation สำหรับผลหลัก',
-        '- RGB dictionary, filter21 sweep, beta/alpha sweep, multiple training seeds, background-head ablation: `not run`; ควบคุมค่าหลักเดียวกัน ไม่ได้ทำ full Cartesian grid',
-        f'- Nonconverged primary ADMM subproblems: {len(v["nonconverged_primary_subproblems"])} รายการ ไม่เปลี่ยน tolerance หรือเปลี่ยนชื่อเป็นผ่าน',
-        '- มีภาพ TEST เพียง 5 ภาพซึ่งเคยใช้แล้ว Bootstrap 2,000 paired image draws ใน paired_bootstrap.json วัดความแปรปรวนระหว่างภาพเท่านั้น ไม่มี training-seed variability และไม่อ้าง statistical significance ต่อประชากร', '',
-        '## 20. Conclusion','']
-    wins=[n for n in NAMES if b['per_class'][n]['iou']>a['per_class'][n]['iou']]
-    losses=[n for n in NAMES if b['per_class'][n]['iou']<a['per_class'][n]['iou']]
-    lines += [f'บน previously-seen TEST, SCSC มี IoU เพิ่มใน: {", ".join(wins) or "ไม่มี"}; IoU ลดใน: {", ".join(losses) or "ไม่มี"}. '
-        f'Foreground macro AP เปลี่ยน {b["macro_AP_foreground"]-a["macro_AP_foreground"]:+.6f}, foreground mIoU เปลี่ยน {b["foreground_mIoU"]-a["foreground_mIoU"]:+.6f}, global PSNR เปลี่ยน {b["PSNR_db_mean_image"]-a["PSNR_db_mean_image"]:+.6f} dB.', '',
-        'ผลนี้ตอบได้เฉพาะพฤติกรรมของการทดลองขนาดเล็กบนข้อมูลชุดนี้ ไม่พิสูจน์ความเหนือกว่าทุกคลาส ไม่รับรอง generalization บน independent unseen COCO และไม่รับรองว่า activation maps ดูดีกว่าเสมอ การทดสอบ artifact consistency ผ่านหมายถึงไฟล์/ตัวเลขสอดคล้องกัน ไม่ได้แปลว่าสมมติฐานทางวิจัยผ่าน', '',
-        '## Verification and provenance','',
-        f'ตรวจภาพต้นฉบับ {v["original_images_verified"]} ภาพ, native predictions ทั้งหมด {v["native_predictions_recomputed"]} ชุด (รวมคู่ final {v["selected_native_predictions_recomputed"]} ชุด), paired inpainting {v["paired_inpaintings_verified"]} ชุด และ PNG {v["PNG_files_verified"]} ไฟล์ อ่านค่าใหม่จาก NPZ เพื่อเทียบ confusion/AP/PSNR กับ JSON พร้อม SHA256 inventory ไฟล์ใหม่ทั้งหมด ไม่มีการใช้ผลทดลองเก่าเป็นผลใหม่', '',
-        'Source branch: `research/scsc-coco-final`; baseline HEAD และ package versions อยู่ environment.json; source commit อยู่ verification.json ไฟล์ ZIP ใหม่รวม source, data, PDFs และผลใหม่เท่านั้น ไม่รวม virtualenv/cache/unused legacy scripts/pilot checkpoints']
-    diagnostic=OUT/'metrics/ADMM_extended_ceiling_diagnostic.json'
-    if diagnostic.exists():
-        d=read(diagnostic)
-        lines+=['','## Additional ADMM diagnostic','',
-            f'ทดสอบ first alternating step ของ K=4, gamma=1 ซ้ำโดยเพิ่มเพดานเป็น 5,000 และคง atol/rtol เดิม: Z converged={d["Z"]["converged"]} ใน {d["Z"]["iterations"]} iterations; D converged={d["D"]["converged"]} ใน {d["D"]["iterations"]} iterations. Status={d["status"]}. เป็น numerical diagnostic เท่านั้น ไม่ใช่โมเดลที่ฝึก 10 outer iterations และไม่ได้แทนค่าหรือลบ failures ใน primary sweep', '',
-            'สาเหตุที่แยกตรวจ: บาง Z-step เมื่อ gamma สูงต้องปรับ sparse codes จาก initialization มากจนเพดานเดิมไม่พอ; บาง D-step dual residual ยังสูงกว่า tolerance เล็กน้อย และบาง D-step ผ่าน residual แต่ feasible dictionary objective แย่ลงจึงถูก descent guard ปฏิเสธ ต้องแยกกรณีเหล่านี้จากการรันผิดหรือคำนวณ NaN']
-    recovery=OUT/'logs/recovered_implementation_failures.json'
-    if recovery.exists():
-        lines+=['','## Solver failure recovery and reruns','',
-            'การทดลอง SCSC รุ่นแรกของงานนี้ถูกเก็บไว้ใน failed_attempts/prox_v1 และไม่ใช้เลือกโมเดลหรือเป็นผล final สาเหตุคือ undamped Newton logistic prox สามารถแกว่งเป็นสองจุด เช่น a=−8, gamma=1, rho=1/16 ทั้งที่รากจริงเป็นศูนย์ เพิ่มเพดาน ADMM เป็น 5,000 ก็ไม่แก้ การแก้ใช้ monotone root bracket พร้อมรับ Newton step เฉพาะเมื่อ residual ลดอย่างน้อยครึ่งหนึ่ง มิฉะนั้น bisection และตรวจ stationarity ทุกครั้ง', '',
-            'K=100 SCSC รุ่นแรกเกิด overflow ใน D-step จาก Gram/Woodbury cancellation แบบ float32 การเปลี่ยน Gram เป็น float64 อย่างเดียวยังไม่ผ่าน high-coherence regression จึงใช้ complex128 spectral linear solve จาก SVD ของ Z โดยตรง ซึ่งคง identity และ nullspace ได้เสถียรกว่า มี numerical regression เทียบ Brent root oracle, independent epigraph optimizer และกรณี Gram ill-conditioned รองรับ SCSC ทุกรุ่นที่ใช้เป็นผล primary ถูกฝึกใหม่หลังแก้ ไม่ใช้ผลรุ่นที่ผิดมาสรุปว่า paper สำเร็จ', '',
-            'Baseline gamma=0 ที่เก็บไว้ไม่มี logistic prox และผ่าน finite-state/residual/feasible-descent checks; ใช้สมการและ tolerance เดียวกัน แต่บาง baseline รันก่อน precision/FFT refactor จึงไม่ได้อ้าง bitwise-identical execution ระหว่าง implementation revisions รายละเอียด source hashing ของงานใหม่อยู่ software.json ส่วน early baseline ไม่มี per-job source hash ที่เก็บทัน จึงเป็นข้อจำกัด provenance ที่ระบุไว้ตรงนี้']
-        old=OUT/'failed_attempts/prox_v1/ADMM_extended_ceiling_diagnostic.json'
-        new=OUT/'checkpoints/K4_g1_N10/history.json'
-        if old.exists() and new.exists():
-            previous=read(old);current=read(new)[0]
-            comparison=dict(previous_undamped=dict(maxiter=5000,Z_converged=previous['Z']['converged'],Z_iterations=previous['Z']['iterations']),
-                corrected=dict(maxiter=1000,Z_converged=current['z_admm']['converged'],Z_iterations=current['z_admm']['iterations'],D_converged=current['d_admm']['converged'],D_iterations=current['d_admm']['iterations']),
-                note='Same K4 gamma1 N10 first alternating step; primary corrected model still has all ten outer iterations separately logged')
-            jwrite(OUT/'metrics/ADMM_solver_fix_comparison.json',comparison)
-            lines+=['',f'เปรียบเทียบ K=4, gamma=1 first alternating step: รุ่นเดิม maxiter=5000 Z-converged={previous["Z"]["converged"]}; รุ่นแก้ maxiter=1000 Z-converged={current["z_admm"]["converged"]} ใน {current["z_admm"]["iterations"]} ขั้น ไม่ย้ายผล diagnostic มาแทนผลฝึก 10 outer iterations']
-        record=read(recovery);record['status']='corrected_primary_sweep_completed_and_artifacts_verified';jwrite(recovery,record)
-    nblock=['| N (K=4 fixed, VAL) | CSC foreground AP | SCSC foreground AP | CSC PSNR dB | SCSC PSNR dB |','|---|---:|---:|---:|---:|']
-    counts=[]
-    for n in sorted({c['N'] for c in s['N_configs']}):
-        configs=[c for c in s['N_configs'] if c['N']==n]
-        baseline=next(c for c in configs if c['gamma']==0);supervised=next(c for c in configs if c['gamma']>0)
-        values=[]
-        for c in [baseline,supervised]:
-            k=tag(c['K'],c['gamma'],c['N']);values.append(read(OUT/'metrics'/f'{k}_val.json')['aggregate'])
-        nblock.append(f'| {n} | {values[0]["macro_AP_foreground"]:.6f} | {values[1]["macro_AP_foreground"]:.6f} | {values[0]["PSNR_db_mean_image"]:.6f} | {values[1]["PSNR_db_mean_image"]:.6f} |')
-        bank=read(OUT/'checkpoints'/tag(4,0,n)/'training_bank.json')
-        counts.append(f'N={n}: {bank["label_counts_per_class"]}')
-    nblock+=['','จำนวน labeled anchor entries (positive+negative) ตามลำดับ Person/Car/Motorcycle/Background: '+ '; '.join(counts)+'. Positive/negative สมดุลภายในแต่ละ head เมื่อมีข้อมูล แต่ยอดรวมระหว่าง heads ต่างกันตาม coverage ไม่ตีความ N curve ว่าแยกผลจำนวนภาพจากความหลากหลายของภาพ/สัดส่วนคลาสได้สมบูรณ์','',
-        'ขอบเขตพิกเซล TRAIN ที่สุ่มจริงและ unique reconstruction-support pixels หลัง boundary mask อยู่ tables/native_training_coverage.csv แยก raw crop area กับ data-term area; lowpass preprocessing อ่านภาพต้นฉบับเต็ม แต่ dictionary optimization ใช้เฉพาะ tile bank','']
-    lines[lines.index('## 9. Figure 3 results'):lines.index('## 9. Figure 3 results')]=nblock
-    penalty=OUT/'metrics/D_penalty_conditioning_diagnostic.json'
-    if penalty.exists():
-        p=read(penalty)
-        lines+=['','## Additional penalty diagnostic (not adopted)','',
-            'ทดสอบ K=32, gamma=2 first D-step ด้วย native TRAIN bank เดิม ลด adaptive rho floor จาก 1/64 เป็น 1e-6 โดยคง maxiter=1000 และ atol/rtol เดิม ไม่ใช้ TEST ในการทดลองนี้', '',
-            '| Rho floor | D converged | Final primal / tolerance | Final dual / tolerance | Candidate feasible objective |','|---|---|---:|---:|---:|']
-        for name,d in [('1/64',p['previous_floor_D']),('1e-6',p['lower_floor_D'])]:
-            last=d['residuals'][-1]
-            lines.append(f'| {name} | {d["converged"]} | {last["primal_relative"]:.6f} | {last["dual_relative_proxy"]:.6f} | {d["candidate_feasible_objective"]:.6f} |')
-        lines+=['','ทั้งสองแบบยังไม่ผ่านและ candidate ที่ทำให้ objective แย่ลงถูกปฏิเสธ จึงไม่ใช้ setting ใหม่ใน primary sweep ผลนี้แสดงว่าเพิ่มช่วง rho อย่างเดียวไม่แก้ conditioning/finite-budget convergence ทุกกรณี ไม่ผ่อน tolerance เพื่อเปลี่ยน failure ให้เป็น pass']
-    lines+=['','Implementation provenance: ระหว่างพัฒนาได้ลด redundant FFT โดย reuse zf/dhat ตามสมการเดิม คง objective และ stopping criteria เดิม มี independent scalar/high-K epigraph optimizer tests รองรับ เฉพาะ baseline CSC K=100 ที่เริ่มก่อน optimization ใช้รุ่น FFT เดิมต่อจนจบ ส่วน SCSC รุ่นผิดถูกเก็บเป็น failure evidence และฝึกใหม่; ไม่เรียกผลจาก profiler ว่าเป็น training result ดู profiling_summary.json และ software metadata โดยไม่อ้าง bitwise identity ระหว่าง implementation revisions']
-    (OUT/'FINAL_REPORT_TH.md').write_text('\n'.join(lines)+'\n')
-    (OUT/'PROJECT_STATUS_TH.md').write_text('# สถานะผลใหม่\n\nอ่าน FINAL_REPORT_TH.md และ verification.json\n\n'
-        f'Artifact consistency: ผ่าน; primary ADMM ไม่ converge {len(v["nonconverged_primary_subproblems"])} รายการ; '
-        'TEST ไม่อิสระ; N>=20 และ cross-dataset inpainting ไม่ได้รัน; ไม่ใช่ Fully Verified Final\n')
-    jwrite(OUT/'GOAL_STATUS.json',dict(status='experiments_completed_with_scientific_limitations',
-        artifact_consistency_passed=v['artifact_consistency_passed'],fully_verified_final=False,
-        independent_unseen_generalization_confirmed=False,
-        all_primary_subproblems_converged=v['all_primary_subproblems_converged'],
-        per_class_seen_test={n:dict(IoU_increased=b['per_class'][n]['iou']>a['per_class'][n]['iou'],
-            AP_increased=b['pooled_pixel_AP'][n]>a['pooled_pixel_AP'][n]) for n in NAMES},
-        metric_deltas_SCSC_minus_CSC={name:b[name]-a[name] for name in ['macro_AP_foreground','macro_AP_all_classes','foreground_mIoU','all_class_mIoU','background_FPR','PSNR_db_mean_image','SSIM_mean_image']},
-        unavailable=['new independent TEST','N>=20','other-dataset inpainting'],
-        note='Improvements on these five previously-seen images do not establish unseen-data superiority'))
-    print('Thai report written from verified new results')
-
-
+ r=read(OUT/'REPORT_METRICS.json');sel=r['selection'];a=r['TEST_PREVIOUSLY_SEEN']['CSC'];b=r['TEST_PREVIOUSLY_SEEN']['SCSC'];verify=read(OUT/'verification.json');seeds=read(OUT/'metrics/three_seed_summary.json')
+ lines=['# SCSC COCO v2 — รายงานผลใหม่', '',datetime.now(ZoneInfo('Asia/Bangkok')).isoformat(),'',
+ '## ขอบเขตและวิธีใหม่','',
+ f"เลือกด้วย VAL: K={sel['selected']['K']}, gamma={sel['selected']['gamma']}, N=10; K=100 ถูกตัดออกทุกการทดลองใหม่",'',
+ 'Primary solver คือ FISTA สำหรับ label-free Z และ projected FISTA สำหรับ reconstruction D-step. SCSC เพิ่ม task-driven dictionary update ด้วย Adam ผ่าน differentiable FISTA ที่ไม่รับ label เป็น encoder input. จึงเป็นวิธีต่อยอดจาก paper ไม่ใช่การทำซ้ำ Algorithm 2 เดิมทุกสมการ.', '',
+ 'ใช้ signed coefficients, absolute coefficients, local energy pooling 5/15 pixels และ native RGB/local RGB เป็น features เหมือนกันทั้ง CSC/SCSC; dictionary reconstruction ยังเป็น grayscale highpass ไม่ใช่ RGB dictionary. ไม่มี resize. ฝึก fresh linear softmax classifier ของแต่ละ dictionary จาก TRAIN เท่านั้น.', '',
+ 'TRAIN 10 / VAL 3 / previously-seen TEST 5 ภาพเดิม. 12 native 64x64 crops ต่อภาพ (ครึ่ง ROI ครึ่งสุ่ม uniform), 30 outer iterations, reconstruction warmup 4 รอบ แล้วเพิ่ม task gamma จนครบใน 10 รอบ. เริ่ม dictionary ด้วย seed เดียวกันในแต่ละคู่. มี controls 4 crops และ signed-only.', '',
+ 'Task objective = 100*mean masked reconstruction squared error + ramp*gamma*mean weighted classification CE + 1e-5*head-weight norm squared. Z objective และ generative D update ใช้ masked reconstruction sum + beta*l1 ตามที่บันทึก. Alpha เป็น regularization ของ fresh classifier. Gamma v2 จึงไม่ใช่หน่วยเดียวกับ OVA sum-loss ของ v1.', '',
+ '## การเลือกพารามิเตอร์และความเป็นธรรม','',
+ 'ค้น beta .005/.015/.03, alpha .1/1/10 และ filter 11/21 แบบ staged ที่ K=4,gamma=.2 จากนั้น gamma sweep และ K sweep [4,8,12,16,32,49]. ก่อนประเมิน TEST เพิ่ม joint refinement ที่สอง K อันดับดีที่สุดด้วย gamma={initial_gamma,.2,1} แล้วรัน K curve ครบอีกครั้งที่ gamma ที่เลือกใหม่ เพื่อไม่ยึด gamma จาก K=4 เพียงอย่างเดียว. เลือกด้วย all-class VAL mIoU โดยให้ความสำคัญกับ Background IoU/recall >=.1 แล้วใช้ foreground AP ตัดสินเมื่อเท่ากัน. ชุด N=[1,5,10] เป็น nested learning curve ที่ K=4; ไม่ทำซ้ำภาพเพื่อเพิ่ม N.', '',
+ 'Calibration ใช้ VAL fit shared temperature และ class biases ด้วย CE แบบเดียวกันทั้งสอง arm. VAL จึงเป็น tuning data ไม่ใช่ independent test. เลือก recipe/gamma/K เสร็จก่อนเปิด TEST metrics ของ v2. ทดสอบ seed42/43/44 โดยไม่เลือก seed ที่ชนะ. Baseline CSC ได้ feature engineering, calibration, sample bank และ fresh classifier แบบเดียวกับ SCSC.', '',
+ '## ผล TEST ของ seed42','',
+ '| Metric | CSC | SCSC | SCSC−CSC |','|---|---:|---:|---:|']
+ for field in ['macro_AP_foreground','macro_AP_all_classes','foreground_mIoU','all_class_mIoU','pixel_accuracy','background_FPR','PSNR_db_mean_image','SSIM_mean_image','relative_reconstruction_error_mean_image']:
+  lines.append(f'| {field} | {a[field]:.6f} | {b[field]:.6f} | {b[field]-a[field]:+.6f} |')
+ lines+=['','| Class | CSC AP | SCSC AP | CSC IoU | SCSC IoU | CSC recall | SCSC recall |','|---|---:|---:|---:|---:|---:|---:|']
+ for name in NAMES:lines.append(f"| {name} | {a['pooled_pixel_AP'][name]:.6f} | {b['pooled_pixel_AP'][name]:.6f} | {a['per_class'][name]['iou']:.6f} | {b['per_class'][name]['iou']:.6f} | {a['per_class'][name]['recall']:.6f} | {b['per_class'][name]['recall']:.6f} |")
+ lines+=['','## หลาย seed และการถ่ายทอดจาก TRAIN','',
+ '| Metric | Mean delta SCSC−CSC | Sample std across 3 seeds |','|---|---:|---:|']
+ for field,d in seeds['paired'].items():lines.append(f"| {field} | {d['mean']:+.6f} | {d['sample_std']:.6f} |")
+ lines+=['','รายละเอียดราย seed อยู่ tables/three_seed_TEST_metrics.csv; balanced TRAIN AP และช่องว่างระหว่าง warmstarted unrolled/production code อยู่ metrics/label_free_train_transfer.json. TRAIN diagnostic ไม่ใช่ TEST score. Image bootstrap seed42 และ training-seed variation เป็นคนละแหล่งความแปรปรวน. ไม่อ้าง statistical significance ต่อประชากร.', '',
+ '## ผลการเปลี่ยน solver/loss และ controls','',
+ 'ADMM reference ใช้ D ceiling1000 โดยคง tolerance เดิม หลังพบ pilot ceiling160 ไม่ converge; pilot ยังเก็บแยก ไม่ใช้แทน reference. มี exact source snapshot ของการเพิ่ม optional budget นี้ ส่วนการคำนวณ FISTA ไม่เปลี่ยน. ดู tables/ablations_and_controls.csv: 2 solvers x 2 losses x 2 arms ที่ K=4 รวม recipe/feature/sampling controls. ADMM variants เปลี่ยน production coding และ generative D step แต่ task-gradient ใช้ differentiable FISTA approximation เดียวกันตามประกาศ. จึงไม่เรียก ADMM variant ว่า differentiation through ADMM.', '',
+ 'metrics/solver_benchmark.json ใช้ fixed dictionary/signal/beta/mask เดียวกันที่ K=4/16/49, 3 repeats, strict stopping. อ้าง speedup ได้เฉพาะค่าที่ matched_accuracy=True; FISTA stopping ใช้ normalized proximal fixed-point step G_L/L เทียบ relative iterate scale; ค่านี้ขึ้นกับ step size และต้องอ่านร่วมกับ objective benchmark ส่วน ADMM ใช้ primal/dual residual ไม่เอาจำนวนรอบมาเทียบเป็นเวลา.', '',
+ '## Figure 3–6 และ Table 1–2','',
+ '- Figure 3: filters ทุกตัว ทุกคู่ K และ evolution รอบ 1/15/30 พร้อม checkpoints ครบ 30 รอบ.',
+ '- Figure 4: raw dense class probabilities, binary masks, multiclass predictions, 4x4 class panels ทุก TEST image. แผนที่ probability ใช้ดำถึงสีคลาสด้วยสเกล 0–1 เดียวกัน. เพิ่ม colored_points_black: local maxima 9x9 และ p>=.35 กฎเดียวกันทั้งสอง arm ไม่มี GT filtering; เป็น display supplement ไม่เปลี่ยน dense predictions หรือ metrics.',
+ '- Figure 5(a–f): AP/PSNR vs gamma/K/N รวม macro และรายคลาส; ตัวเลขทั้งหมดจาก VAL ที่ใช้ tuning. Numeric source CSV ครบ.',
+ '- Figure 6: reconstruction PSNR เฉพาะ GT region ของ Person/Car/Motorcycle; GT ใช้ evaluation เท่านั้น.',
+ '- Table 1: AP/PSNR ทุก gamma บน VAL และ TEST เฉพาะโมเดลที่เลือก. Table 2: inpainting 50% missing, paired seeded masks, all/missing-pixel PSNR, SSIM และ relative error.',
+ '- เพิ่ม confusion/normalized confusion, per-class precision/recall/F1/IoU/AP, PR curves, IoU charts, reconstruction, loss/convergence curves, runtime/memory, native training coverage และ outer-validation diagnostics.', '',
+ '## Inpainting และ reconstruction','',
+ 'Reconstruction เป็น highpass dictionary + lowpass ของ input. Inpainting คำนวณ lowpass จาก observed pixels เท่านั้น ไม่ใช้ lowpass ภาพเต็มและไม่ใช้ RGB ที่ถูกซ่อน. Missing mask seed42+image_id เหมือนกันทั้งสอง arm และ floor(50% pixels) จริง. ไม่มี other-dataset claim.', '',
+ '| Arm | PSNR all | PSNR missing | SSIM | Relative error |','|---|---:|---:|---:|---:|']
+ for cfg in sel['paired_models']:
+  rr=read(OUT/'metrics'/f'{tag(cfg)}_inpainting.json')['per_image'];values=[np.mean([v[k] for v in rr]) for k in ['PSNR_all_db','PSNR_missing_db','SSIM','relative_error']]
+  lines.append('| '+('CSC' if cfg['gamma']==0 else 'SCSC')+' | '+' | '.join(f'{v:.6f}' for v in values)+' |')
+ lines+=['','## การแปลผลและสิ่งที่ยังไม่สำเร็จ','',
+ f"ผล seed42 ดีกว่า CSC ใน foreground AP {b['macro_AP_foreground']-a['macro_AP_foreground']:+.6f}, all-class mIoU {b['all_class_mIoU']-a['all_class_mIoU']:+.6f} และ PSNR {b['PSNR_db_mean_image']-a['PSNR_db_mean_image']:+.6f} dB แต่ค่าเฉลี่ยผลต่าง foreground AP ของสาม seed คือ {seeds['paired']['foreground_AP']['mean']:+.6f} และ all-class mIoU {seeds['paired']['all_class_mIoU']['mean']:+.6f}. จึงยังไม่พิสูจน์ว่า SCSC ชนะ CSC อย่างสม่ำเสมอ ไม่เลือกตัด seeds ที่แพ้ออก.", '',
+ 'การปรับ features, sampling และ calibration ช่วยทั้งสอง arm การดีขึ้นจาก v1 จึงไม่ใช่ประโยชน์ของ supervision ทั้งหมด ดู signed-only/four-crop controls บน VAL เพื่อแยกผล. Task-driven dictionary มีผลเพิ่มเล็กน้อยเมื่อเทียบกับ CSC ที่ได้ engineering เหมือนกัน. ข้อมูลยังน้อยและ grayscale local dictionary ยังมีบริบท semantic จำกัด แม้ใช้ RGB เป็น classifier context.', '',
+ 'แผนที่จุดสีใหม่มีไว้ทำให้ตรวจความต่างได้ชัด ไม่ใช่หลักฐานว่า SCSC ชนะทุกภาพ. จำนวนจุดลดอาจเกิดจาก recall ลด ต้องอ่าน dense metrics และ per-class results ร่วมกัน. ตาราง/ภาพที่ SCSC แพ้ยังแสดงครบ.', '']
+ transfer=read(OUT/'metrics/label_free_train_transfer.json')
+ lines+=['','### ข้อจำกัดของการแยกสาเหตุ','']
+ for item in transfer['rows']:
+  lines.append(f"- {item['id']}: warmstarted unrolled/production relative code gap = {item['warmstarted_unrolled_relative_code_gap']:.2%}. การเอา label ออกจาก encoder แก้การพึ่ง label โดยตรง แต่ความคลาดเคลื่อนจาก finite-step differentiation และ production stopping ยังเหลือ ไม่อ้างว่า train/inference codes ตรงกันสมบูรณ์.")
+ candidates=[]
+ for cfg in sel['recipe_search']+sel['K_configs']+sel['controls']:
+  if cfg['gamma']==0 and cfg['seed']==42 and cfg['solver']=='fista' and cfg['loss']=='softmax':
+   agg=read(OUT/'metrics'/f'{tag(cfg)}_val.json')['aggregate']
+   candidates.append((agg['all_class_mIoU'],tag(cfg)))
+ best_csc=max(candidates)
+ lines+=['',f"CSC ที่มี all-class VAL mIoU สูงสุดใน recipe/K/control search ที่ seed42 คือ {best_csc[1]} ({best_csc[0]:.6f}). คู่หลักเป็นการควบคุม hyperparameters ร่วมกันตาม recipe ที่เลือกให้ SCSC ไม่ใช่การยืนยันว่าชนะ CSC ที่ tune แยกอย่างอิสระทุก setting.", '',
+ 'SCSC มี Adam step เพิ่มที่ประกอบด้วย reconstruction และ classification loss ขณะที่ CSC หลักใช้ generative projected FISTA อย่างเดียว จึงไม่ใช่ compute-matched supervision-only ablation; ห้ามตีความ PSNR ที่เพิ่มทั้งหมดว่าเกิดจาก labels. Loss control เปรียบเทียบ weighted softmax CE กับ unweighted mean OVA BCE ซึ่งมีหน่วยต่างกัน ผลจึงเป็นการเปรียบเทียบ pipelines ที่ประกาศ ไม่ได้แยกผล link function เพียงอย่างเดียว.', '']
+ lines+=['','## การตรวจสอบและข้อจำกัด','',
+ f"ตรวจ {verify['models_checked']} โมเดล, original images {verify['original_images_verified']}, stored native predictions {verify['stored_native_predictions_rechecked']}, paired inpainting {verify['paired_inpaintings_verified']}, PNG {verify['PNG_files_verified']}. Artifact consistency={verify['artifact_consistency_passed']}. Training subproblems ไม่ผ่าน stopping criterion {len(verify['nonconverged_primary_subproblems'])} รายการ; inference images ที่มี batch ไม่ผ่าน {len(verify['nonconverged_inference_images'])} รายการ. เก็บ failures ไว้ทั้งหมด ไม่เปลี่ยนชื่อเป็น convergence.", '',
+ 'การตรวจ artifacts คือคำนวณ metrics ใหม่จาก saved arrays และตรวจ source hashes/shape/checkpoints ไม่ใช่ retrain ทุกโมเดลอิสระ. FISTA converged mapping ไม่รับรอง nonconvex outer stationary point หรือคำตอบ global. 24-step differentiable encoder ใช้ warmstart จาก label-free code และเป็น truncated differentiation approximation.', '',
+ 'ภาพ COCO เพิ่มเติมถูก proxy CONNECT 403 ปฏิเสธระหว่างงานนี้. จึงไม่ได้รัน N>10, independent new TEST และ other-dataset inpainting. Existing TEST เคยเปิดใช้ในงานก่อนหน้าและผู้พัฒนาเคยเห็นผลแล้ว; ไม่อ้าง unseen generalization แม้เลือก v2 บน VAL เท่านั้น. RGB dictionary ยังไม่ได้ใช้; RGB เป็น classifier context ที่แชร์ทั้งสอง arm.', '',
+ 'ไม่รับประกัน SCSC ชนะ CSC ทุกคลาสหรือ reconstruction. ตารางที่แพ้และคะแนนลบยังคงแสดงครบ. Source base คือ research/scsc-coco-final commit 80a44dd; โค้ดและผล v2 แยก branch research/scsc-coco-v2. คำสั่งรันครบอยู่ README_V2.md.', '']
+ lines+=['','## สถานะ solver ของคู่ที่เลือก','', '| Model | Z converged | Generative D converged | Outer budget |','|---|---:|---:|---:|']
+ for status in verify.get('selected_model_convergence',[]):
+  lines.append(f"| {status['id']} | {status['z_converged']} | {status['d_converged']} | {status['outer']} |")
+ lines+=['','ตัวเลขนี้เป็นการหยุดของ inner generative solves ก่อน task update ไม่ใช่หลักฐานว่า Adam หรือ nonconvex outer optimization ถึงจุด stationary. Field classifier ใน history เป็น bootstrap-head diagnostic; task head ใช้ fixed Adam steps ส่วน fresh-head success อ่านจาก completed.json.','']
+ (OUT/'FINAL_REPORT_TH.md').write_text('\n'.join(lines));(OUT/'PROJECT_STATUS_TH.md').write_text('อ่าน FINAL_REPORT_TH.md และ verification.json: artifact consistency ผ่าน ไม่ได้พิสูจน์ independent unseen superiority\n')
+ deltas={field:b[field]-a[field] for field in ['macro_AP_foreground','foreground_mIoU','all_class_mIoU','background_FPR','PSNR_db_mean_image']}
+ jwrite(OUT/'GOAL_STATUS.json',dict(status='completed_with_reported_wins_losses_and_limitations',artifact_consistency_passed=True,independent_unseen_superiority=False,all_classes_improved=all(b['per_class'][n]['iou']>a['per_class'][n]['iou'] for n in NAMES),seed42_deltas=deltas,three_seed_deltas=seeds['paired'],K100_excluded=True))
+ print('Thai v2 report generated')
 if __name__=='__main__':main()

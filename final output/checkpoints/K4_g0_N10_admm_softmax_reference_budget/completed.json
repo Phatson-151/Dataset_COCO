@@ -1,0 +1,205 @@
+{
+  "id": "K4_g0_N10_admm_softmax_reference_budget",
+  "config": {
+    "seed": 42,
+    "tile": 64,
+    "stride": 44,
+    "tiles_per_image": 12,
+    "filter_size": 11,
+    "points": 128,
+    "beta": 0.015,
+    "alpha": 0.1,
+    "outer": 30,
+    "max_admm": 160,
+    "eval_admm": 160,
+    "tol": 0.003,
+    "adaptive": false,
+    "solver": "admm",
+    "loss": "softmax",
+    "feature": "signed_energy_rgb",
+    "task_steps": 24,
+    "task_lr": 0.003,
+    "K": 4,
+    "gamma": 0,
+    "N": 10,
+    "d_maxiter": 1000,
+    "variant": "reference_budget"
+  },
+  "status": "completed",
+  "seconds": 695.3492093086243,
+  "peak_rss_MiB": 603.36328125,
+  "z_converged": 30,
+  "d_converged": 27,
+  "total_subproblems": 60,
+  "fresh_encoding": {
+    "iterations": 80,
+    "converged": true,
+    "residuals": [
+      {
+        "iter": 1,
+        "primal_residual": 30.383752822875977,
+        "dual_residual": 82.0377197265625,
+        "rho": 1.0,
+        "coding_objective": 1846.344970703125,
+        "primal_tolerance": 0.24791860337765817,
+        "dual_tolerance": 0.38632891903914024,
+        "primal_relative": 122.5553565118788,
+        "dual_relative_proxy": 212.35200287517432
+      },
+      {
+        "iter": 10,
+        "primal_residual": 0.8989408612251282,
+        "dual_residual": 1.9688798189163208,
+        "rho": 1.0,
+        "coding_objective": 199.44618225097656,
+        "primal_tolerance": 0.3502073487213433,
+        "dual_tolerance": 0.1461236096853714,
+        "primal_relative": 2.566881775917292,
+        "dual_relative_proxy": 13.474070502060885
+      },
+      {
+        "iter": 20,
+        "primal_residual": 0.3252459764480591,
+        "dual_residual": 0.9136787056922913,
+        "rho": 1.0,
+        "coding_objective": 186.23809814453125,
+        "primal_tolerance": 0.3542588850429833,
+        "dual_tolerance": 0.14295800420738267,
+        "primal_relative": 0.9181025238325243,
+        "dual_relative_proxy": 6.391238537206068
+      },
+      {
+        "iter": 30,
+        "primal_residual": 0.16617080569267273,
+        "dual_residual": 0.5637974143028259,
+        "rho": 1.0,
+        "coding_objective": 182.3534698486328,
+        "primal_tolerance": 0.35662875081809164,
+        "dual_tolerance": 0.14190836268759774,
+        "primal_relative": 0.46594898844101534,
+        "dual_relative_proxy": 3.9729682143115848
+      },
+      {
+        "iter": 40,
+        "primal_residual": 0.09941284358501434,
+        "dual_residual": 0.3902287483215332,
+        "rho": 1.0,
+        "coding_objective": 180.66151428222656,
+        "primal_tolerance": 0.3581782182625115,
+        "dual_tolerance": 0.14138765651083993,
+        "primal_relative": 0.27755133761973744,
+        "dual_relative_proxy": 2.7599916283470978
+      },
+      {
+        "iter": 50,
+        "primal_residual": 0.0666002705693245,
+        "dual_residual": 0.2952888011932373,
+        "rho": 1.0,
+        "coding_objective": 179.77914428710938,
+        "primal_tolerance": 0.3593059381416619,
+        "dual_tolerance": 0.14110283926644804,
+        "primal_relative": 0.18535811268186253,
+        "dual_relative_proxy": 2.0927204776909982
+      },
+      {
+        "iter": 60,
+        "primal_residual": 0.04787270724773407,
+        "dual_residual": 0.23198504745960236,
+        "rho": 1.0,
+        "coding_objective": 179.26918029785156,
+        "primal_tolerance": 0.36015828456195,
+        "dual_tolerance": 0.14091292809977637,
+        "primal_relative": 0.13292129960570045,
+        "dual_relative_proxy": 1.6463006665743292
+      },
+      {
+        "iter": 70,
+        "primal_residual": 0.10585697740316391,
+        "dual_residual": 0.1741809993982315,
+        "rho": 0.5,
+        "coding_objective": 179.54351806640625,
+        "primal_tolerance": 0.36149310077937247,
+        "dual_tolerance": 0.14073951473043742,
+        "primal_relative": 0.2928326354636872,
+        "dual_relative_proxy": 1.2376126188288028
+      },
+      {
+        "iter": 80,
+        "primal_residual": 0.08470267802476883,
+        "dual_residual": 0.12822923064231873,
+        "rho": 0.5,
+        "coding_objective": 179.16387939453125,
+        "primal_tolerance": 0.36235200371058585,
+        "dual_tolerance": 0.14060166018831985,
+        "primal_relative": 0.23375799542265455,
+        "dual_relative_proxy": 0.9120036738582626
+      }
+    ],
+    "maxiter": 160,
+    "tolerance": 0.003,
+    "compute_chunk_size": 1
+  },
+  "fresh_classifier": {
+    "success": true,
+    "iterations": 138,
+    "sampled_pixels": 122526
+  },
+  "bootstrap_encoding": {
+    "iterations": 30,
+    "converged": true,
+    "residuals": [
+      {
+        "iter": 1,
+        "primal_residual": 7.8079328536987305,
+        "dual_residual": 5.619758605957031,
+        "rho": 1.0,
+        "coding_objective": 262.04034423828125,
+        "primal_tolerance": 0.3823557248285592,
+        "dual_tolerance": 0.15707621927655743,
+        "primal_relative": 20.42059879500864,
+        "dual_relative_proxy": 35.777271899208124
+      },
+      {
+        "iter": 10,
+        "primal_residual": 0.4415263533592224,
+        "dual_residual": 0.8458852171897888,
+        "rho": 1.0,
+        "coding_objective": 267.8426513671875,
+        "primal_tolerance": 0.3820623805692971,
+        "dual_tolerance": 0.14275463315940903,
+        "primal_relative": 1.15563943432829,
+        "dual_relative_proxy": 5.925448431822306
+      },
+      {
+        "iter": 20,
+        "primal_residual": 0.11436488479375839,
+        "dual_residual": 0.2571544051170349,
+        "rho": 1.0,
+        "coding_objective": 262.8310546875,
+        "primal_tolerance": 0.3828533640077889,
+        "dual_tolerance": 0.14098843886101128,
+        "primal_relative": 0.2987171997042495,
+        "dual_relative_proxy": 1.8239396591272419
+      },
+      {
+        "iter": 30,
+        "primal_residual": 0.04033365100622177,
+        "dual_residual": 0.1281047761440277,
+        "rho": 1.0,
+        "coding_objective": 261.7465515136719,
+        "primal_tolerance": 0.3832646956613839,
+        "dual_tolerance": 0.14060129342184843,
+        "primal_relative": 0.10523706321715773,
+        "dual_relative_proxy": 0.9111208938858961
+      }
+    ],
+    "maxiter": 160,
+    "tolerance": 0.003,
+    "compute_chunk_size": 1
+  },
+  "bootstrap_classifier": {
+    "success": true,
+    "iterations": 140,
+    "sampled_pixels": 122526
+  }
+}

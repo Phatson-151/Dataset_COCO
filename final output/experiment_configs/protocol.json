@@ -1,62 +1,14 @@
 {
-  "parameters": {
-    "seed": 42,
-    "tile": 64,
-    "stride": 44,
-    "tiles_per_image": 4,
-    "filter_size": 11,
-    "points": 24,
-    "beta": 0.015,
-    "alpha": 1.0,
-    "outer": 10,
-    "max_admm": 1000,
-    "eval_admm": 1000,
-    "tol": 0.003,
-    "adaptive": true
-  },
-  "splits": {
-    "train": [
-      326689,
-      377352,
-      508140,
-      453605,
-      310553,
-      5205,
-      515229,
-      144597,
-      274034,
-      453799
-    ],
-    "val": [
-      446651,
-      230008,
-      68093
-    ],
-    "test_sealed": [
-      452775,
-      496274,
-      580613,
-      376628,
-      428065
-    ]
-  },
-  "training": "Global bank D-step, four sampled native 64x64 tiles per TRAIN image; not full-frame optimization",
-  "test": "previously seen, NOT independent",
-  "class_ids": {
-    "Background": 0,
-    "Person": 1,
-    "Car": 2,
-    "Motorcycle": 3
-  },
-  "internal_score_channels": [
-    "Person",
-    "Car",
-    "Motorcycle",
-    "Background"
+  "protocol": "V2_TASK_DRIVEN_LABEL_FREE_FISTA_SOFTMAX",
+  "K": [
+    4,
+    8,
+    12,
+    16,
+    32,
+    49
   ],
-  "classification": "four OVA logistic heads; argmax raw logits; no smoothing/calibration",
-  "selection": "maximize pooled VAL foreground AP; tie lower complexity; never select on TEST or positive SCSC-CSC differences",
-  "gamma_grid": [
+  "gamma": [
     0,
     0.05,
     0.1,
@@ -69,29 +21,31 @@
     10,
     100
   ],
-  "K_grid": [
-    4,
-    8,
-    12,
-    16,
-    32,
-    49,
-    100
-  ],
-  "N_grid": [
+  "N": [
     1,
     5,
     10
   ],
-  "N_unavailable": [
-    20,
-    25,
-    40
+  "seeds": [
+    42,
+    43,
+    44
   ],
-  "ignored": "target-class crowds and overlap between target classes; other annotated classes and unannotated regions count as background by project definition",
-  "fresh_holdout_network_probe": "HTTPS images.cocodataset.org CONNECT 403; no new images downloaded",
-  "validation": "18 checksums and native shapes verified with official pycocotools masks",
-  "seed": 42,
-  "N_reference_K": 4,
-  "N_design_note": "Controlled nested N curve at fixed K=4 and VAL-selected gamma; avoids an unnecessary K x N grid. Final K remains selected by the full K sweep. Design updated before N runs or TEST evaluation."
+  "joint_refinement": "Top two K from initial VAL sweep, gamma in {initial_gamma,.2,1}; choose VAL gamma, then complete all K at that fixed gamma",
+  "rule": "VAL all-class mIoU; prefer Background IoU and recall >= .1, then foreground AP tiebreak; no TEST selection",
+  "adaptations": [
+    "differentiable warmstarted 24-step label-free FISTA task encoder",
+    "signed/absolute/pooled sparse features plus native RGB context for both arms",
+    "fresh classifier for both arms",
+    "shared VAL CE temperature/bias calibration",
+    "12 native tiles per image: 50% ROI, 50% uniformly sampled",
+    "30 outer iterations, reconstruction warmup and supervision ramp"
+  ],
+  "known_unavailable": [
+    "N>10 unique TRAIN images",
+    "new independent holdout",
+    "other-dataset inpainting"
+  ],
+  "source_base": "80a44dd6001e542b1637e511d70fe23a7cbdaca1",
+  "python": "3.12.14"
 }

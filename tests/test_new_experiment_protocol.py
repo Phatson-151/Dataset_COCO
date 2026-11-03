@@ -94,16 +94,21 @@ class NewReleaseArtifactTests(unittest.TestCase):
 
     def test_all_completed_candidates_have_ten_checkpoints(self):
         for p in (self.out/'checkpoints').glob('*/completed.json'):
-            self.assertEqual(len(list(p.parent.glob('outer_*.npz'))),10)
+            cfg=json.loads((p.parent/'config.json').read_text());self.assertEqual(len(list(p.parent.glob('outer_*.npz'))),cfg['outer'])
             h=json.loads((p.parent/'history.json').read_text())
-            self.assertEqual(len(h),10)
+            self.assertEqual(len(h),cfg['outer'])
             for row in h:
-                self.assertLessEqual(row['after_d']['total'],row['after_z']['total']+1e-3)
+                if 'task_objective' in row:
+                    dd=row['d_admm'];self.assertGreaterEqual(row['task_objective'],0)
+                    if not dd.get('descent_guard_rejected',False):self.assertLessEqual(dd['candidate_feasible_objective'],dd['initial_feasible_objective']+1e-3)
+                else:self.assertLessEqual(row['after_d']['total'],row['after_z']['total']+1e-3)
                 for name in ['z_admm','d_admm']:
                     diag=row[name];last=diag['residuals'][-1]
                     if diag['converged']:
-                        self.assertLessEqual(last['primal_residual'],last['primal_tolerance'])
-                        self.assertLessEqual(last['dual_residual'],last['dual_tolerance'])
+                        if 'mapping_norm' in last:self.assertLessEqual(last['mapping_norm'],last['mapping_tolerance'])
+                        else:
+                            self.assertLessEqual(last['primal_residual'],last['primal_tolerance'])
+                            self.assertLessEqual(last['dual_residual'],last['dual_tolerance'])
 
     def test_inpainting_masks_are_paired(self):
         from paper_scsc.data import manifest

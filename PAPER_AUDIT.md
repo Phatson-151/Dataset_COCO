@@ -1,3 +1,7 @@
+# V2 adaptations supersede the historical audit below
+
+V2 uses label-free FISTA coding, projected reconstruction updates, and an additional task-driven Adam update through warmstarted unrolled FISTA. Fresh multinomial softmax heads, shared native RGB/energy features and VAL calibration are controlled adaptations. Read README_V2.md and final output/FINAL_REPORT_TH.md for the precise v2 protocol and objective units. This is not an exact binary-paper reproduction. The following audit documents fixes inherited from v1 only.
+
 # Paper-to-code audit for the new experiments
 
 Both PDFs in `references/` were read as extracted text (the extraction tool was

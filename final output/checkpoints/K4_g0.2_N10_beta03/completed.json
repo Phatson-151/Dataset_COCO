@@ -1,0 +1,108 @@
+{
+  "id": "K4_g0.2_N10_beta03",
+  "config": {
+    "seed": 42,
+    "tile": 64,
+    "stride": 44,
+    "tiles_per_image": 12,
+    "filter_size": 11,
+    "points": 128,
+    "beta": 0.03,
+    "alpha": 1.0,
+    "outer": 30,
+    "max_admm": 160,
+    "eval_admm": 160,
+    "tol": 0.003,
+    "adaptive": false,
+    "solver": "fista",
+    "loss": "softmax",
+    "feature": "signed_energy_rgb",
+    "task_steps": 24,
+    "task_lr": 0.003,
+    "K": 4,
+    "gamma": 0.2,
+    "N": 10,
+    "variant": "beta03"
+  },
+  "status": "completed",
+  "seconds": 22.62151837348938,
+  "peak_rss_MiB": 759.31640625,
+  "z_converged": 30,
+  "d_converged": 30,
+  "total_subproblems": 60,
+  "fresh_encoding": {
+    "solver": "FISTA",
+    "iterations": 30,
+    "converged": true,
+    "residuals": [
+      {
+        "iter": 1,
+        "objective": 856.8280639648438,
+        "mapping_norm": 3.9482834339141846,
+        "mapping_tolerance": 0.02753308582305908,
+        "L": 17.127153396606445,
+        "primal_relative": 143.40141382218334,
+        "dual_relative_proxy": 143.40141382218334
+      },
+      {
+        "iter": 10,
+        "objective": 389.05072021484375,
+        "mapping_norm": 0.33274751901626587,
+        "mapping_tolerance": 0.06757590293884277,
+        "L": 17.127153396606445,
+        "primal_relative": 4.924055832704262,
+        "dual_relative_proxy": 4.924055832704262
+      },
+      {
+        "iter": 20,
+        "objective": 355.5712585449219,
+        "mapping_norm": 0.136208176612854,
+        "mapping_tolerance": 0.07889737129211426,
+        "L": 17.127153396606445,
+        "primal_relative": 1.726396892344472,
+        "dual_relative_proxy": 1.726396892344472
+      },
+      {
+        "iter": 30,
+        "objective": 344.96881103515625,
+        "mapping_norm": 0.07508676499128342,
+        "mapping_tolerance": 0.08722603225708007,
+        "L": 17.127153396606445,
+        "primal_relative": 0.8608297666226664,
+        "dual_relative_proxy": 0.8608297666226664
+      }
+    ],
+    "maxiter": 160,
+    "tolerance": 0.003,
+    "seconds": 1.1465746310000213
+  },
+  "fresh_classifier": {
+    "success": true,
+    "iterations": 147,
+    "sampled_pixels": 122526
+  },
+  "bootstrap_encoding": {
+    "solver": "FISTA",
+    "iterations": 1,
+    "converged": true,
+    "residuals": [
+      {
+        "iter": 1,
+        "objective": 483.7701721191406,
+        "mapping_norm": 0.09541106224060059,
+        "mapping_tolerance": 0.11214339065551758,
+        "L": 12.698418617248535,
+        "primal_relative": 0.8507952335210247,
+        "dual_relative_proxy": 0.8507952335210247
+      }
+    ],
+    "maxiter": 160,
+    "tolerance": 0.003,
+    "seconds": 0.058965416999853915
+  },
+  "bootstrap_classifier": {
+    "success": true,
+    "iterations": 154,
+    "sampled_pixels": 122526
+  }
+}
